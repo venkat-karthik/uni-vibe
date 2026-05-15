@@ -324,6 +324,11 @@ def enter():
                 flash('Please enter a valid email address.', 'warning')
                 return redirect(url_for('enter'))
             
+            # Validate domain - only allow newhorizonindia.edu
+            if not email.endswith('@newhorizonindia.edu'):
+                flash('❌ Only New Horizon India emails are allowed (e.g., 1NH24CD038@newhorizonindia.edu)', 'danger')
+                return redirect(url_for('enter'))
+            
             # Check if email or username already exists
             conn = get_db()
             try:
