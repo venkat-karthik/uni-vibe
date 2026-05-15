@@ -204,8 +204,19 @@
 <script>
   // Initialize Google Sign-In
   window.onload = function() {
+    const clientId = '{{ google_client_id }}';
+    
+    // Check if client ID is set
+    if (!clientId || clientId === '631710741538-abc123.apps.googleusercontent.com') {
+      console.warn('⚠️ GOOGLE_CLIENT_ID not configured. Google Sign-In will not work.');
+      console.warn('Set GOOGLE_CLIENT_ID environment variable and restart server.');
+      document.getElementById('google-signin-btn').disabled = true;
+      document.getElementById('google-signup-btn').disabled = true;
+      return;
+    }
+    
     google.accounts.id.initialize({
-      client_id: '{{ google_client_id }}',
+      client_id: clientId,
       callback: handleCredentialResponse
     });
   };
