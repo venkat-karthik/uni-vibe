@@ -4,201 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - UniVibe</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: 'DM Sans', sans-serif;
-    }
-
-    .login-container {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-      padding: 50px;
-      width: 100%;
-      max-width: 450px;
-      animation: slideUp 0.6s ease-out;
-    }
-
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .login-header {
-      text-align: center;
-      margin-bottom: 40px;
-    }
-
-    .login-header h1 {
-      font-size: 32px;
-      font-weight: 700;
-      color: #2d3748;
-      margin: 0 0 10px 0;
-    }
-
-    .login-header p {
-      color: #718096;
-      font-size: 14px;
-      margin: 0;
-    }
-
-    .form-group {
-      margin-bottom: 20px;
-    }
-
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      color: #2d3748;
-      margin-bottom: 8px;
-      font-size: 14px;
-    }
-
-    .form-group input {
-      width: 100%;
-      padding: 12px 16px;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-      transition: all 0.3s ease;
-      box-sizing: border-box;
-    }
-
-    .form-group input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .login-btn {
-      width: 100%;
-      padding: 14px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 16px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      margin-top: 10px;
-    }
-
-    .login-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-    }
-
-    .divider {
-      display: flex;
-      align-items: center;
-      margin: 30px 0;
-      color: #cbd5e0;
-    }
-
-    .divider::before,
-    .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: #e2e8f0;
-    }
-
-    .divider span {
-      padding: 0 15px;
-      font-size: 13px;
-      color: #a0aec0;
-    }
-
-    .google-btn {
-      width: 100%;
-      padding: 12px;
-      background: white;
-      border: 2px solid #e2e8f0;
-      border-radius: 10px;
-      font-weight: 600;
-      font-size: 14px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-
-    .google-btn:hover {
-      border-color: #667eea;
-      background: #f7fafc;
-    }
-
-    .signup-link {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 14px;
-      color: #718096;
-    }
-
-    .signup-link a {
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .signup-link a:hover {
-      text-decoration: underline;
-    }
-
-    .error-message {
-      background: #fed7d7;
-      color: #c53030;
-      padding: 12px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      font-size: 14px;
-      display: none;
-    }
-
-    .error-message.show {
-      display: block;
-    }
-
-    .loading {
-      display: none;
-      text-align: center;
-      color: #667eea;
-      font-size: 14px;
-    }
-
-    .loading.show {
-      display: block;
-    }
-
-    @media (max-width: 600px) {
-      .login-container {
-        padding: 30px;
-        margin: 20px;
-      }
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'DM Sans', sans-serif; }
+    .login-container { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); padding: 50px; width: 100%; max-width: 450px; animation: slideUp 0.6s ease-out; }
+    @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    .login-header { text-align: center; margin-bottom: 40px; }
+    .login-header h1 { font-size: 32px; font-weight: 700; color: #2d3748; margin: 0 0 10px 0; }
+    .login-header p { color: #718096; font-size: 14px; margin: 0; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 600; color: #2d3748; margin-bottom: 8px; font-size: 14px; }
+    .form-group input { width: 100%; padding: 12px 16px; border: 2px solid #e2e8f0; border-radius: 10px; font-size: 14px; font-family: 'DM Sans', sans-serif; transition: all 0.3s ease; box-sizing: border-box; }
+    .form-group input:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
+    .login-btn { width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; font-weight: 600; font-size: 16px; cursor: pointer; transition: all 0.3s ease; margin-top: 10px; }
+    .login-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3); }
+    .divider { display: flex; align-items: center; margin: 30px 0; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #e2e8f0; }
+    .divider span { padding: 0 15px; font-size: 13px; color: #a0aec0; }
+    .google-btn { width: 100%; padding: 12px; background: white; border: 2px solid #e2e8f0; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .google-btn:hover { border-color: #667eea; background: #f7fafc; }
+    .signup-link { text-align: center; margin-top: 20px; font-size: 14px; color: #718096; }
+    .signup-link a { color: #667eea; text-decoration: none; font-weight: 600; }
+    .error-message { background: #fed7d7; color: #c53030; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; display: none; }
+    .error-message.show { display: block; }
+    .loading { display: none; text-align: center; color: #667eea; font-size: 14px; }
+    .loading.show { display: block; }
   </style>
 </head>
 <body>
@@ -207,28 +38,20 @@
       <h1>Welcome Back</h1>
       <p>Sign in to your UniVibe account</p>
     </div>
-
     <div class="error-message" id="errorMessage"></div>
     <div class="loading" id="loadingMessage">Signing in...</div>
-
     <form id="loginForm">
       <div class="form-group">
         <label for="email">Email Address</label>
         <input type="email" id="email" name="email" placeholder="you@example.com" required>
       </div>
-
       <div class="form-group">
         <label for="password">Password</label>
         <input type="password" id="password" name="password" placeholder="••••••••" required>
       </div>
-
       <button type="submit" class="login-btn">Sign In</button>
     </form>
-
-    <div class="divider">
-      <span>OR</span>
-    </div>
-
+    <div class="divider"><span>OR</span></div>
     <button type="button" class="google-btn" id="googleSignInBtn">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -238,31 +61,23 @@
       </svg>
       <span>Sign in with Google</span>
     </button>
-
     <div class="signup-link">
       Don't have an account? <a href="/register">Sign up here</a>
     </div>
   </div>
-
   <script type="module">
     import { loginWithEmail, signInWithGoogle } from '/static/js/firebase-auth.js';
-
     const loginForm = document.getElementById('loginForm');
     const googleSignInBtn = document.getElementById('googleSignInBtn');
     const errorMessage = document.getElementById('errorMessage');
     const loadingMessage = document.getElementById('loadingMessage');
-
-    // Email/Password Login
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorMessage.classList.remove('show');
       loadingMessage.classList.add('show');
-
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
-
       const result = await loginWithEmail(email, password);
-
       if (result.success) {
         window.location.href = '/dashboard';
       } else {
@@ -271,14 +86,10 @@
         loadingMessage.classList.remove('show');
       }
     });
-
-    // Google Sign-In
     googleSignInBtn.addEventListener('click', async () => {
       errorMessage.classList.remove('show');
       loadingMessage.classList.add('show');
-
       const result = await signInWithGoogle();
-
       if (result.success) {
         window.location.href = '/dashboard';
       } else {
