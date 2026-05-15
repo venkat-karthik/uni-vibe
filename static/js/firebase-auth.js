@@ -92,11 +92,13 @@ async function signInWithGoogle() {
       })
     });
 
+    const result = await response.json();
+    
     if (!response.ok) {
-      throw new Error(`Backend error: ${response.statusText}`);
+      const errorMsg = result.error || response.statusText || 'Unknown error';
+      throw new Error(`Backend error: ${errorMsg}`);
     }
 
-    const result = await response.json();
     console.log("✅ Google auth successful:", result.message);
     
     // Redirect to dashboard
