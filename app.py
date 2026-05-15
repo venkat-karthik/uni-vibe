@@ -6,66 +6,12 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from dotenv import load_dotenv
-import firebase_admin
-from firebase_admin import credentials, firestore, auth
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'univibe_secret_2024'
 DB_PATH = 'univibe.db'
-
-# Firebase Configuration
-FIREBASE_CONFIG = {
-    "apiKey": "AIzaSyCc9soowCRi8W7hGZqL_RViQwallIPutp4",
-    "authDomain": "unvibe-54ae1.firebaseapp.com",
-    "projectId": "unvibe-54ae1",
-    "storageBucket": "unvibe-54ae1.firebasestorage.app",
-    "messagingSenderId": "91608029769",
-    "appId": "1:91608029769:web:18544d40309fbd82a63d98",
-    "measurementId": "G-Z8MKB0PL4M"
-}
-
-# Dynamic email whitelist - no hardcoded domain restriction
-# Emails are approved when users first sign up
-ALLOWED_EMAIL_DOMAIN = None  # Will be checked dynamically from Firestore
-
-# Initialize Firebase Admin SDK
-try:
-    firebase_admin.get_app()
-except ValueError:
-    # Firebase not initialized yet - initialize with credentials
-    try:
-        # Try to load from environment variable (for Vercel)
-        import json
-        import os
-        
-        service_account_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
-        if service_account_json:
-            print("🔄 Loading Firebase credentials from environment variable...")
-            service_account_info = json.loads(service_account_json)
-            cred = credentials.Certificate(service_account_info)
-            firebase_admin.initialize_app(cred)
-            print("✅ Firebase initialized with environment credentials")
-        else:
-            # Try to load from file (for local development)
-            print("🔄 Loading Firebase credentials from file...")
-            cred = credentials.Certificate('serviceAccountKey.json')
-            firebase_admin.initialize_app(cred)
-            print("✅ Firebase initialized with file credentials")
-    except FileNotFoundError:
-        print("⚠️ Service account key not found - using default credentials")
-        firebase_admin.initialize_app()
-    except Exception as e:
-        print(f"⚠️ Firebase initialization error: {e}")
-        firebase_admin.initialize_app()
-
-# Initialize Firestore
-try:
-    db = firestore.client()
-except Exception as e:
-    print(f"⚠️ Firestore initialization warning: {e}")
-    db = None
 
 QUESTIONS = [
     {"id":1,"text":"What is your favourite sport to watch?","icon":"🏆","type":"dropdown","options":["Cricket","Football","Basketball","Tennis","Badminton","Kabaddi","Chess","Table Tennis","Volleyball","Swimming","Athletics","Hockey","Baseball","Rugby","F1 Racing"]},
@@ -84,37 +30,6 @@ QUESTIONS = [
     {"id":14,"text":"How would your friends describe your social style?","icon":"🤝","type":"dropdown","options":["Life of the party — always hyper","Friendly but takes time to open up","Deep conversations only — no small talk","Loyal ride-or-die to a close circle","Makes friends everywhere instantly","Quiet but helpful when needed","The planner — always organizing hangouts","The comedian — keeps everyone laughing","The advice-giver / agony uncle or aunt","Loves online friends more than IRL","Super reliable — never cancels","Always late but worth it","Motivates everyone around them","Low-key mysterious","Just vibing — no labels needed"]},
     {"id":15,"text":"What matters most to you in life right now?","icon":"💫","type":"dropdown","options":["Career Growth & Success","Meaningful Friendships","Learning & Personal Growth","Financial Independence","Creative Expression","Making a Social Impact","Family & Relationships","Health & Well-being","Adventure & New Experiences","Academic Excellence","Fame / Recognition / Influence","Inner peace & Mental Health","Building something of my own","Travel & Freedom","Just surviving this semester"]}
 ]
-
-def is_email_approved(email):
-    """Check if email is in the approved whitelist."""
-    try:
-        from firebase_admin import firestore
-        fs_db = firestore.client()
-        
-        # Check if email exists in approved_emails collection
-        doc = fs_db.collection('approved_emails').document(email.lower()).get()
-        return doc.exists
-    except Exception as e:
-        print(f"⚠️ Error checking email approval: {e}")
-        return False
-
-def approve_email(email):
-    """Add email to the approved whitelist."""
-    try:
-        from firebase_admin import firestore
-        fs_db = firestore.client()
-        
-        # Add email to approved_emails collection
-        fs_db.collection('approved_emails').document(email.lower()).set({
-            'email': email.lower(),
-            'approved_at': datetime.now(),
-            'approved_by': 'user_signup'
-        })
-        print(f"✅ Email approved: {email}")
-        return True
-    except Exception as e:
-        print(f"⚠️ Error approving email: {e}")
-        return False
 
 # ─── DATABASE ─────────────────────────────────────────────────────────────────
 def get_db():
@@ -334,107 +249,13 @@ def test():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username'].strip()
-        email = request.form['email'].strip().lower()
-        password = request.form['password']
-        full_name = request.form.get('full_name', '').strip()
-        bio = request.form.get('bio', '').strip()
-        
-        # Check if this is the first user (no users in database yet)
-        conn = get_db()
-        try:
-            user_count = conn.execute('SELECT COUNT(*) as c FROM users').fetchone()['c']
-        finally:
-            conn.close()
-        
-        # If not the first user, check if email is approved
-        if user_count > 0 and not is_email_approved(email):
-            flash(f'Email {email} is not approved. Contact an admin to get approved.', 'danger')
-            return render_template('register.html')
-        
-        colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
-        color = random.choice(colors)
-        try:
-            conn = get_db()
-            try:
-                conn.execute('INSERT INTO users (username, email, password, full_name, bio, avatar_color) VALUES (?,?,?,?,?,?)',
-                    (username, email, hash_password(password), full_name, bio, color))
-                conn.commit()
-                
-                # Get the newly created user
-                user = conn.execute('SELECT id, username, full_name, avatar_color FROM users WHERE email=?', (email,)).fetchone()
-                
-                # Approve this email for future signups
-                approve_email(email)
-                
-                # Auto-login the user
-                session['user_id'] = user['id']
-                session['username'] = user['username']
-                session['full_name'] = user['full_name']
-                session['avatar_color'] = user['avatar_color']
-                
-                # Also sync to Firestore
-                try:
-                    from firebase_admin import firestore
-                    fs_db = firestore.client()
-                    
-                    user_data = {
-                        'email': email,
-                        'full_name': full_name or username,
-                        'username': username,
-                        'avatar_color': color,
-                        'bio': bio,
-                        'is_blacklisted': False,
-                        'provider': 'email',
-                        'created_at': datetime.now(),
-                        'updated_at': datetime.now(),
-                        'profile_complete': False,
-                        'quiz_completed': False
-                    }
-                    
-                    fs_db.collection('users').document(str(user['id'])).set(user_data, merge=True)
-                    print(f"✅ User synced to Firestore: {email}")
-                except Exception as fs_error:
-                    print(f"⚠️ Firestore sync warning: {fs_error}")
-                
-                flash(f'Welcome {full_name or username}! Account created successfully! 🎉', 'success')
-                return redirect(url_for('dashboard'))
-            except sqlite3.IntegrityError:
-                flash('Username or email already exists.', 'danger')
-            finally:
-                conn.close()
-        except Exception as e:
-            print(f"❌ Registration error: {e}")
-            flash('An error occurred. Please try again.', 'danger')
-    return render_template('register.html')
+    flash('Registration is currently disabled.', 'info')
+    return redirect(url_for('index'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        identifier = request.form['identifier'].strip()
-        password = request.form['password']
-        conn = get_db()
-        try:
-            user = conn.execute(
-                'SELECT * FROM users WHERE (username=? OR email=?) AND password=?',
-                (identifier, identifier, hash_password(password))
-            ).fetchone()
-        finally:
-            conn.close()
-        if user:
-            if user['is_blacklisted']:
-                flash('Your account has been suspended due to repeated bad reviews.', 'danger')
-                return render_template('login.html')
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['full_name'] = user['full_name']
-            session['avatar_color'] = user['avatar_color']
-            flash(f'Welcome back, {user["full_name"] or user["username"]}! 🎉', 'success')
-            return redirect(url_for('dashboard'))
-        else:
-            flash('Invalid credentials. Please try again.', 'danger')
-    return render_template('login.html')
+    flash('Login is currently disabled.', 'info')
+    return redirect(url_for('index'))
 
 @app.route('/logout')
 def logout():
@@ -789,120 +610,6 @@ def cookie_consent():
         return jsonify({'success': True})
     finally:
         conn.close()
-
-# ─── FIREBASE AUTH ─────────────────────────────────────────────────────────────
-@app.route('/api/firebase_auth', methods=['POST'])
-def firebase_auth():
-    """Handle Firebase authentication - store in Firestore only."""
-    try:
-        data = request.get_json()
-        uid = data.get('uid')
-        email = data.get('email', '').strip().lower()
-        display_name = data.get('displayName', '').strip()
-        photo_url = data.get('photoURL', '')
-        provider = data.get('provider', 'unknown')
-        
-        print(f"🔐 Firebase auth request: {email} ({provider})")
-        
-        # Extract username from email (part before @)
-        username = email.split('@')[0]
-        
-        try:
-            from firebase_admin import firestore
-            fs_db = firestore.client()
-            
-            # Check if user exists in Firestore
-            user_doc = fs_db.collection('users').document(uid).get()
-            
-            if user_doc.exists:
-                # User exists, update their info
-                fs_db.collection('users').document(uid).update({
-                    'full_name': display_name or username,
-                    'updated_at': datetime.now()
-                })
-                print(f"✅ User updated in Firestore: {email}")
-            else:
-                # Create new user
-                colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
-                color = random.choice(colors)
-                
-                user_data = {
-                    'uid': uid,
-                    'email': email,
-                    'full_name': display_name or username,
-                    'username': username,
-                    'avatar_color': color,
-                    'bio': '',
-                    'is_blacklisted': False,
-                    'provider': provider,
-                    'photoURL': photo_url,
-                    'created_at': datetime.now(),
-                    'updated_at': datetime.now(),
-                    'profile_complete': False,
-                    'quiz_completed': False
-                }
-                
-                fs_db.collection('users').document(uid).set(user_data)
-                print(f"✅ User created in Firestore: {email}")
-            
-            # Set session
-            session['user_id'] = uid
-            session['username'] = username
-            session['full_name'] = display_name or username
-            session['avatar_color'] = colors[0] if 'colors' in locals() else '#6c63ff'
-            
-            print(f"✅ Firebase auth successful: {email}")
-            return jsonify({
-                'success': True,
-                'user_id': uid,
-                'message': f'Welcome {display_name or username}!'
-            }), 200
-            
-        except Exception as fs_error:
-            print(f"❌ Firestore error: {fs_error}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({'error': f'Database error: {str(fs_error)}'}), 500
-            
-    except Exception as e:
-        print(f"❌ Firebase auth error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-# ─── ADMIN ENDPOINTS ──────────────────────────────────────────────────────────
-@app.route('/api/admin/clear_approved_emails', methods=['POST'])
-def clear_approved_emails():
-    """Clear all approved emails from Firestore (for testing/reset)."""
-    try:
-        from firebase_admin import firestore
-        fs_db = firestore.client()
-        
-        # Delete all documents in approved_emails collection
-        docs = fs_db.collection('approved_emails').stream()
-        for doc in docs:
-            doc.reference.delete()
-        
-        print("✅ Cleared all approved emails from Firestore")
-        return jsonify({'success': True, 'message': 'Approved emails cleared'}), 200
-    except Exception as e:
-        print(f"❌ Error clearing approved emails: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/admin/get_approved_emails', methods=['GET'])
-def get_approved_emails():
-    """Get list of all approved emails (for debugging)."""
-    try:
-        from firebase_admin import firestore
-        fs_db = firestore.client()
-        
-        docs = fs_db.collection('approved_emails').stream()
-        emails = [doc.id for doc in docs]
-        
-        return jsonify({'approved_emails': emails, 'count': len(emails)}), 200
-    except Exception as e:
-        print(f"❌ Error getting approved emails: {e}")
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     init_db()
