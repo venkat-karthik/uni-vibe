@@ -15,27 +15,23 @@ app = Flask(__name__)
 app.secret_key = 'univibe_secret_2024'
 DB_PATH = 'univibe.db'
 
-# Firebase Configuration (New Project)
+# Firebase Configuration
 FIREBASE_CONFIG = {
-    "apiKey": "AIzaSyA1WDAtr4k3DThLBx4oc3M392h6bri1Jf0",
-    "authDomain": "unvb-6e1a0.firebaseapp.com",
-    "projectId": "unvb-6e1a0",
-    "storageBucket": "unvb-6e1a0.firebasestorage.app",
-    "messagingSenderId": "133181278048",
-    "appId": "1:133181278048:web:706ce5a2d40be2b5f6c005",
-    "measurementId": "G-41ZSP04VR7"
+    "apiKey": "AIzaSyCDwaBMoEJvJO1NBS-uUzsMTirSSGz8Mcc",
+    "authDomain": "univibe-c85c6.firebaseapp.com",
+    "projectId": "univibe-c85c6",
+    "storageBucket": "univibe-c85c6.firebasestorage.app",
+    "messagingSenderId": "631710741538",
+    "appId": "1:631710741538:web:49b43d32353d97bcc3467b",
+    "measurementId": "G-1CXWWSRM61"
 }
 
 # Initialize Firebase Admin SDK
 try:
     firebase_admin.get_app()
 except ValueError:
-    # Firebase not initialized yet - initialize with credentials
     try:
         # Try to load from environment variable (for Vercel)
-        import json
-        import os
-        
         service_account_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
         if service_account_json:
             print("🔄 Loading Firebase credentials from environment variable...")
@@ -50,15 +46,14 @@ except ValueError:
             firebase_admin.initialize_app(cred)
             print("✅ Firebase initialized with file credentials")
     except FileNotFoundError:
-        print("⚠️ Service account key not found - using default credentials")
-        firebase_admin.initialize_app()
+        print("⚠️ Service account key not found - Firebase Admin SDK disabled")
     except Exception as e:
         print(f"⚠️ Firebase initialization error: {e}")
-        firebase_admin.initialize_app()
 
 # Initialize Firestore
 try:
     db = firestore.client()
+    print("✅ Firestore initialized")
 except Exception as e:
     print(f"⚠️ Firestore initialization warning: {e}")
     db = None
@@ -297,13 +292,51 @@ def index():
 def test():
     return '<h1 style="color:red;">Server is working!</h1>'
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    return render_template('register.html')
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    return render_template('login.html')
+@app.route('/enter', methods=['GET', 'POST'])
+def enter():
+    """Entry to UniVibe - supports both direct entry and Firebase Google Sign-In."""
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        full_name = request.form.get('full_name', '').strip()
+        
+        if not username or not full_name:
+            flash('Please provide both username and name.', 'warning')
+            return redirect(url_for('enter'))
+        
+        # Check if username already exists
+        conn = get_db()
+        try:
+            existing = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+            if existing:
+                flash('Username already taken. Please choose another.', 'warning')
+                return redirect(url_for('enter'))
+            
+            # Create new user
+            colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
+            color = random.choice(colors)
+            
+            conn.execute(
+                'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
+                (username, f'{username}@univibe.local', hashlib.sha256(b'guest').hexdigest(), full_name, color)
+            )
+            conn.commit()
+            
+            # Get the new user ID
+            user = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+            user_id = user['id']
+            
+            # Set session
+            session['user_id'] = user_id
+            session['username'] = username
+            session['full_name'] = full_name
+            session['avatar_color'] = color
+            
+            flash(f'Welcome to UniVibe, {full_name}! 🎉', 'success')
+            return redirect(url_for('dashboard'))
+        finally:
+            conn.close()
+    
+    return render_template('enter.html')
 
 @app.route('/logout')
 def logout():
@@ -313,7 +346,7 @@ def logout():
 @app.route('/dashboard')
 def dashboard():
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     uid = session['user_id']
     conn = get_db()
     try:
@@ -342,7 +375,7 @@ def dashboard():
 @app.route('/quiz', methods=['GET', 'POST'])
 def quiz():
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     if request.method == 'POST':
         answers = {str(q['id']): request.form.get(f'q{q["id"]}', '') for q in QUESTIONS}
         conn = get_db()
@@ -363,7 +396,7 @@ def quiz():
 @app.route('/results')
 def results():
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     uid = session['user_id']
     conn = get_db()
     try:
@@ -399,7 +432,7 @@ def results():
 @app.route('/profile/<int:uid>')
 def profile(uid):
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     me = session['user_id']
     conn = get_db()
     try:
@@ -443,7 +476,7 @@ def profile(uid):
 @app.route('/connect/<int:uid>', methods=['POST'])
 def connect(uid):
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     me = session['user_id']
     if me == uid:
         flash('You cannot connect with yourself!', 'warning')
@@ -473,7 +506,7 @@ def connect(uid):
 @app.route('/connection/respond/<int:conn_id>/<action>')
 def respond_connection(conn_id, action):
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     me = session['user_id']
     conn = get_db()
     try:
@@ -500,7 +533,7 @@ def respond_connection(conn_id, action):
 @app.route('/review/<int:uid>', methods=['POST'])
 def submit_review(uid):
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     me = session['user_id']
     if me == uid:
         flash('You cannot review yourself!', 'warning')
@@ -541,7 +574,7 @@ def submit_review(uid):
 @app.route('/chat/<int:uid>')
 def chat(uid):
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     me = session['user_id']
     # Must have cookie consent to chat
     if not has_cookie_consent(me):
@@ -623,7 +656,7 @@ def get_messages(uid):
 @app.route('/notifications')
 def notifications():
     if 'user_id' not in session:
-        return redirect(url_for('login'))
+        return redirect(url_for('enter'))
     uid = session['user_id']
     conn = get_db()
     try:
@@ -662,7 +695,7 @@ def cookie_consent():
 # ─── FIREBASE AUTH ─────────────────────────────────────────────────────────────
 @app.route('/api/firebase_auth', methods=['POST'])
 def firebase_auth():
-    """Handle Firebase authentication - store in Firestore."""
+    """Handle Firebase authentication - store in Firestore and create session."""
     try:
         data = request.get_json()
         uid = data.get('uid')
@@ -676,62 +709,75 @@ def firebase_auth():
         # Extract username from email (part before @)
         username = email.split('@')[0]
         
+        # Check if user exists in SQLite
+        conn = get_db()
         try:
-            from firebase_admin import firestore
-            fs_db = firestore.client()
+            existing_user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
             
-            # Check if user exists in Firestore
-            user_doc = fs_db.collection('users').document(uid).get()
-            
-            if user_doc.exists:
+            if existing_user:
                 # User exists, update their info
-                fs_db.collection('users').document(uid).update({
-                    'full_name': display_name or username,
-                    'updated_at': datetime.now()
-                })
-                print(f"✅ User updated in Firestore: {email}")
+                user_id = existing_user['id']
+                conn.execute(
+                    'UPDATE users SET full_name=?, avatar_color=? WHERE id=?',
+                    (display_name or username, '#6c63ff', user_id)
+                )
+                conn.commit()
+                print(f"✅ User updated in SQLite: {email}")
             else:
-                # Create new user
+                # Create new user in SQLite
                 colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
                 color = random.choice(colors)
                 
-                user_data = {
-                    'uid': uid,
-                    'email': email,
-                    'full_name': display_name or username,
-                    'username': username,
-                    'avatar_color': color,
-                    'bio': '',
-                    'is_blacklisted': False,
-                    'provider': provider,
-                    'photoURL': photo_url,
-                    'created_at': datetime.now(),
-                    'updated_at': datetime.now(),
-                    'profile_complete': False,
-                    'quiz_completed': False
-                }
+                conn.execute(
+                    'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
+                    (username, email, hashlib.sha256(b'firebase').hexdigest(), display_name or username, color)
+                )
+                conn.commit()
                 
-                fs_db.collection('users').document(uid).set(user_data)
-                print(f"✅ User created in Firestore: {email}")
+                # Get the new user ID
+                user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+                user_id = user['id']
+                print(f"✅ User created in SQLite: {email}")
+            
+            # Also store in Firestore for reference
+            if db:
+                try:
+                    user_data = {
+                        'uid': uid,
+                        'email': email,
+                        'full_name': display_name or username,
+                        'username': username,
+                        'provider': provider,
+                        'photoURL': photo_url,
+                        'created_at': datetime.now(),
+                        'updated_at': datetime.now()
+                    }
+                    db.collection('users').document(uid).set(user_data, merge=True)
+                    print(f"✅ User stored in Firestore: {email}")
+                except Exception as fs_error:
+                    print(f"⚠️ Firestore storage warning: {fs_error}")
             
             # Set session
-            session['user_id'] = uid
+            session['user_id'] = user_id
             session['username'] = username
             session['full_name'] = display_name or username
-            session['avatar_color'] = colors[0] if 'colors' in locals() else '#6c63ff'
+            session['avatar_color'] = '#6c63ff'
+            session['email'] = email
             
             print(f"✅ Firebase auth successful: {email}")
             return jsonify({
                 'success': True,
-                'user_id': uid,
+                'user_id': user_id,
                 'message': f'Welcome {display_name or username}!'
             }), 200
             
-        except Exception as fs_error:
-            print(f"❌ Firestore error: {fs_error}")
+        except Exception as db_error:
+            print(f"❌ Database error: {db_error}")
             import traceback
             traceback.print_exc()
-            return jsonify({'error': f'Database error: {str(fs_error)}'}), 500
+            return jsonify({'error': f'Database error: {str(db_error)}'}), 500
+        finally:
+            conn.close()
             
     except Exception as e:
         print(f"❌ Firebase auth error: {e}")

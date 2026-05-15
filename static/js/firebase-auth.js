@@ -1,7 +1,5 @@
-// Firebase Authentication Module - Modular SDK
+// Firebase Authentication Module - Google Sign-In/Sign-Up
 import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
   onAuthStateChanged,
@@ -30,111 +28,6 @@ async function waitForFirebase(maxAttempts = 50) {
   }
   console.error("❌ Firebase failed to initialize after 5 seconds");
   return false;
-}
-
-// Email/Password Registration
-async function registerWithEmail(email, password, fullName, username, bio = '') {
-  try {
-    console.log("🔐 Email registration initiated...");
-    
-    if (!await waitForFirebase()) {
-      throw new Error("Firebase not initialized");
-    }
-
-    // Create user in Firebase Auth
-    const userCredential = await createUserWithEmailAndPassword(window.firebaseAuth, email, password);
-    const user = userCredential.user;
-    console.log("✅ User created in Firebase Auth:", user.uid);
-
-    // Create user document in Firestore
-    const colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8'];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-
-    const userData = {
-      uid: user.uid,
-      email: email.toLowerCase(),
-      full_name: fullName || username,
-      username: username,
-      avatar_color: color,
-      bio: bio,
-      is_blacklisted: false,
-      provider: 'email',
-      created_at: new Date(),
-      updated_at: new Date(),
-      profile_complete: false,
-      quiz_completed: false
-    };
-
-    await setDoc(doc(window.firebaseDb, 'users', user.uid), userData);
-    console.log("✅ User document created in Firestore");
-
-    // Send to backend to create session
-    const response = await fetch('/api/firebase_auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        uid: user.uid,
-        email: email,
-        displayName: fullName || username,
-        provider: 'email'
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Backend error: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    console.log("✅ Registration successful:", result.message);
-    return { success: true, user: user, message: result.message };
-
-  } catch (error) {
-    console.error("❌ Registration failed:", error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-// Email/Password Login
-async function loginWithEmail(email, password) {
-  try {
-    console.log("🔐 Email login initiated...");
-    
-    if (!await waitForFirebase()) {
-      throw new Error("Firebase not initialized");
-    }
-
-    const userCredential = await signInWithEmailAndPassword(window.firebaseAuth, email, password);
-    const user = userCredential.user;
-    console.log("✅ User logged in:", user.uid);
-
-    // Get user data from Firestore
-    const userDoc = await getDoc(doc(window.firebaseDb, 'users', user.uid));
-    const userData = userDoc.data();
-
-    // Send to backend to create session
-    const response = await fetch('/api/firebase_auth', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        uid: user.uid,
-        email: user.email,
-        displayName: userData?.full_name || user.email.split('@')[0],
-        provider: 'email'
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Backend error: ${response.statusText}`);
-    }
-
-    const result = await response.json();
-    console.log("✅ Login successful:", result.message);
-    return { success: true, user: user, message: result.message };
-
-  } catch (error) {
-    console.error("❌ Login failed:", error.message);
-    return { success: false, error: error.message };
-  }
 }
 
 // Google Sign-In/Sign-Up
@@ -205,10 +98,14 @@ async function signInWithGoogle() {
 
     const result = await response.json();
     console.log("✅ Google auth successful:", result.message);
+    
+    // Redirect to dashboard
+    window.location.href = '/dashboard';
     return { success: true, user: user, message: result.message };
 
   } catch (error) {
     console.error("❌ Google Sign-In failed:", error.message);
+    alert('Sign-in failed: ' + error.message);
     return { success: false, error: error.message };
   }
 }
@@ -253,8 +150,13 @@ function monitorAuthState(callback) {
 
 // Export functions
 window.firebaseAuthModule = {
-  registerWithEmail,
-  loginWithEmail,
+  signInWithGoogle,
+  logout,
+  monitorAuthState,
+  waitForFirebase
+};
+
+export {
   signInWithGoogle,
   logout,
   monitorAuthState,

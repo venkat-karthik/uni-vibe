@@ -1,6 +1,0 @@
-Force Vercel Redeploy - Remove domain validation
-
-This file forces Vercel to redeploy the latest code.
-The firebase-auth-enhanced.js file has been updated to remove ALL domain validation.
-
-Timestamp: 2026-05-15
