@@ -775,7 +775,7 @@ def cookie_consent():
 # ─── FIREBASE AUTH ─────────────────────────────────────────────────────────────
 @app.route('/api/firebase_auth', methods=['POST'])
 def firebase_auth():
-    """Handle Firebase authentication and create/update user in database."""
+    """Handle Firebase authentication - store in Firestore only."""
     try:
         data = request.get_json()
         uid = data.get('uid')
@@ -789,85 +789,63 @@ def firebase_auth():
         # Extract username from email (part before @)
         username = email.split('@')[0]
         
-        conn = get_db()
         try:
-            # Check if user exists
-            user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+            from firebase_admin import firestore
+            fs_db = firestore.client()
             
-            if user:
+            # Check if user exists in Firestore
+            user_doc = fs_db.collection('users').document(uid).get()
+            
+            if user_doc.exists:
                 # User exists, update their info
-                user_id = user['id']
-                conn.execute(
-                    'UPDATE users SET full_name=? WHERE id=?',
-                    (display_name or username, user_id)
-                )
-                conn.commit()
-                print(f"✅ User updated in SQLite: {email}")
+                fs_db.collection('users').document(uid).update({
+                    'full_name': display_name or username,
+                    'updated_at': datetime.now()
+                })
+                print(f"✅ User updated in Firestore: {email}")
             else:
                 # Create new user
                 colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
                 color = random.choice(colors)
-                
-                try:
-                    conn.execute(
-                        'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
-                        (username, email, 'firebase_' + uid, display_name or username, color)
-                    )
-                    conn.commit()
-                    user_id = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()['id']
-                    print(f"✅ User created in SQLite: {email}")
-                except sqlite3.IntegrityError as e:
-                    print(f"⚠️ Username conflict: {username}, trying unique variant")
-                    # Username might already exist, try with a unique variant
-                    unique_username = f"{username}_{uid[:8]}"
-                    conn.execute(
-                        'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
-                        (unique_username, email, 'firebase_' + uid, display_name or username, color)
-                    )
-                    conn.commit()
-                    user_id = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()['id']
-                    print(f"✅ User created in SQLite with unique username: {email}")
-            
-            # Also sync to Firestore
-            try:
-                from firebase_admin import firestore
-                fs_db = firestore.client()
                 
                 user_data = {
                     'uid': uid,
                     'email': email,
                     'full_name': display_name or username,
                     'username': username,
-                    'avatar_color': colors[0] if 'colors' in locals() else '#6c63ff',
+                    'avatar_color': color,
                     'bio': '',
                     'is_blacklisted': False,
                     'provider': provider,
+                    'photoURL': photo_url,
                     'created_at': datetime.now(),
                     'updated_at': datetime.now(),
                     'profile_complete': False,
                     'quiz_completed': False
                 }
                 
-                fs_db.collection('users').document(uid).set(user_data, merge=True)
-                print(f"✅ User synced to Firestore: {email}")
-            except Exception as fs_error:
-                print(f"⚠️ Firestore sync warning: {fs_error}")
+                fs_db.collection('users').document(uid).set(user_data)
+                print(f"✅ User created in Firestore: {email}")
             
             # Set session
-            session['user_id'] = user_id
-            user_info = conn.execute('SELECT username, full_name, avatar_color FROM users WHERE id=?', (user_id,)).fetchone()
-            session['username'] = user_info['username']
-            session['full_name'] = user_info['full_name']
-            session['avatar_color'] = user_info['avatar_color']
+            session['user_id'] = uid
+            session['username'] = username
+            session['full_name'] = display_name or username
+            session['avatar_color'] = colors[0] if 'colors' in locals() else '#6c63ff'
             
             print(f"✅ Firebase auth successful: {email}")
             return jsonify({
                 'success': True,
-                'user_id': user_id,
+                'user_id': uid,
                 'message': f'Welcome {display_name or username}!'
             }), 200
-        finally:
-            conn.close()
+            
+        except Exception as fs_error:
+            print(f"❌ Firestore error: {fs_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': f'Database error: {str(fs_error)}'}), 500
+            
     except Exception as e:
         print(f"❌ Firebase auth error: {e}")
         import traceback
