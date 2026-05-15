@@ -33,8 +33,10 @@ FIREBASE_CONFIG = {
 }
 
 # Initialize Firebase Admin SDK
+firebase_initialized = False
 try:
     firebase_admin.get_app()
+    firebase_initialized = True
 except ValueError:
     try:
         # Try to load from environment variable (for Vercel)
@@ -44,12 +46,14 @@ except ValueError:
             service_account_info = json.loads(service_account_json)
             cred = credentials.Certificate(service_account_info)
             firebase_admin.initialize_app(cred)
+            firebase_initialized = True
             print("✅ Firebase initialized with environment credentials")
         else:
             # Try to load from file (for local development)
             print("🔄 Loading Firebase credentials from file...")
             cred = credentials.Certificate('serviceAccountKey.json')
             firebase_admin.initialize_app(cred)
+            firebase_initialized = True
             print("✅ Firebase initialized with file credentials")
     except FileNotFoundError:
         print("⚠️ Service account key not found - Firebase Admin SDK disabled")
@@ -57,12 +61,16 @@ except ValueError:
         print(f"⚠️ Firebase initialization error: {e}")
 
 # Initialize Firestore
-try:
-    db = firestore.client()
-    print("✅ Firestore initialized")
-except Exception as e:
-    print(f"⚠️ Firestore initialization warning: {e}")
-    db = None
+db = None
+if firebase_initialized:
+    try:
+        db = firestore.client()
+        print("✅ Firestore initialized")
+    except Exception as e:
+        print(f"⚠️ Firestore initialization warning: {e}")
+        db = None
+else:
+    print("⚠️ Firebase not initialized - Firestore disabled")
 
 QUESTIONS = [
     {"id":1,"text":"What is your favourite sport to watch?","icon":"🏆","type":"dropdown","options":["Cricket","Football","Basketball","Tennis","Badminton","Kabaddi","Chess","Table Tennis","Volleyball","Swimming","Athletics","Hockey","Baseball","Rugby","F1 Racing"]},
@@ -105,6 +113,7 @@ def init_db():
                 bio TEXT,
                 avatar_color TEXT,
                 is_blacklisted INTEGER DEFAULT 0,
+                is_demo INTEGER DEFAULT 0,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
             );
             CREATE TABLE IF NOT EXISTS quiz_answers (
@@ -163,11 +172,51 @@ def init_db():
             );
         ''')
         conn.commit()
+        # Add demo users if they don't exist
+        add_demo_users(conn)
     finally:
         conn.close()
 
 def hash_password(pw):
     return hashlib.sha256(pw.encode()).hexdigest()
+
+def add_demo_users(conn):
+    """Add demo users with quiz answers for testing"""
+    try:
+        # Check if demo users already exist
+        cursor = conn.execute('SELECT COUNT(*) as count FROM users WHERE is_demo=1')
+        existing = cursor.fetchone()
+        if existing[0] > 0:
+            return  # Demo users already exist
+        
+        demo_users = [
+            {'username': 'demo_coder', 'email': 'demo.coder@newhorizonindia.edu', 'full_name': 'Demo Coder', 'bio': 'Passionate about web development and AI', 'avatar_color': '#6c63ff'},
+            {'username': 'demo_designer', 'email': 'demo.designer@newhorizonindia.edu', 'full_name': 'Demo Designer', 'bio': 'UI/UX enthusiast and creative thinker', 'avatar_color': '#ff6584'},
+            {'username': 'demo_gamer', 'email': 'demo.gamer@newhorizonindia.edu', 'full_name': 'Demo Gamer', 'bio': 'Gaming and esports lover', 'avatar_color': '#43d9ad'},
+            {'username': 'demo_student', 'email': 'demo.student@newhorizonindia.edu', 'full_name': 'Demo Student', 'bio': 'Always learning and exploring new things', 'avatar_color': '#f7c948'},
+            {'username': 'demo_entrepreneur', 'email': 'demo.entrepreneur@newhorizonindia.edu', 'full_name': 'Demo Entrepreneur', 'bio': 'Startup enthusiast and innovator', 'avatar_color': '#ff8c42'}
+        ]
+        
+        sample_answers = [
+            {"1": "Cricket", "2": "Gym / Fitness", "3": "Web Development", "4": "JavaScript / TypeScript", "5": "Lo-Fi / Chill", "6": "Sci-Fi / Fantasy", "7": "With YouTube / video lectures", "8": "Coding side projects", "9": "Technical Club (Coding/Robotics)", "10": "Software Engineer at a top tech company", "11": "The Logical Thinker", "12": "Pizza / Pasta Italian feels", "13": "City Tour / Urban Exploration", "14": "The planner — always organizing hangouts", "15": "Career Growth & Success"},
+            {"1": "Football", "2": "Gym / Fitness", "3": "UI/UX Design", "4": "React / Next.js", "5": "Pop", "6": "Comedy / Rom-Com", "7": "In a café or open space", "8": "Drawing / Art", "9": "Fine Arts / Design Club", "10": "Creative professional (Design, Media, Content)", "11": "The Creative Dreamer", "12": "Pizza / Pasta Italian feels", "13": "Beach / Coastal", "14": "The comedian — keeps everyone laughing", "15": "Creative Expression"},
+            {"1": "Basketball", "2": "Gaming", "3": "Game Development", "4": "C / C++", "5": "Electronic / EDM", "6": "Anime", "7": "Alone in silence", "8": "Gaming", "9": "Gaming / Esports Team", "10": "Game Development", "11": "The Laid-Back Chill Person", "12": "Instant noodles & hostel food", "13": "I prefer staying home", "14": "Just vibing — no labels needed", "15": "Adventure & New Experiences"},
+            {"1": "Tennis", "2": "Running", "3": "AI / ML", "4": "Python", "5": "Classical / Instrumental", "6": "Documentary", "7": "Spaced repetition / flashcards", "8": "Reading / Books", "9": "Research / Seminar Group", "10": "Pursuing a Master's / PhD", "11": "The Curious Explorer", "12": "Healthy / Salads / Juices", "13": "Mountains / Trekking", "14": "Deep conversations only — no small talk", "15": "Learning & Personal Growth"},
+            {"1": "Cricket", "2": "Gym / Fitness", "3": "Startup / Entrepreneurship", "4": "JavaScript / TypeScript", "5": "Hip-Hop / Rap", "6": "Action / Thriller", "7": "Pomodoro technique", "8": "Coding side projects", "9": "Entrepreneurship / Startup Cell", "10": "Founder / Running my own startup", "11": "The Leader", "12": "Burgers / Fast Food", "13": "International / Europe Dream", "14": "Motivates everyone around them", "15": "Building something of my own"}
+        ]
+        
+        for i, user in enumerate(demo_users):
+            cursor = conn.execute(
+                'INSERT INTO users (username, email, password, full_name, bio, avatar_color, is_demo) VALUES (?,?,?,?,?,?,?)',
+                (user['username'], user['email'], hashlib.sha256(b'demo').hexdigest(), user['full_name'], user['bio'], user['avatar_color'], 1)
+            )
+            user_id = cursor.lastrowid
+            conn.execute('INSERT INTO quiz_answers (user_id, answers) VALUES (?,?)', (user_id, json.dumps(sample_answers[i])))
+        
+        conn.commit()
+        print("✅ Demo users created successfully")
+    except Exception as e:
+        print(f"⚠️ Error adding demo users: {e}")
 
 # ─── HELPERS ──────────────────────────────────────────────────────────────────
 def add_notification(user_id, from_user_id, ntype, message, link=''):
