@@ -8,12 +8,18 @@ import os
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials, firestore, auth
+import tempfile
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'univibe_secret_2024'
-DB_PATH = 'univibe.db'
+
+# Use /tmp for Vercel (serverless environment)
+if os.environ.get('VERCEL'):
+    DB_PATH = '/tmp/univibe.db'
+else:
+    DB_PATH = 'univibe.db'
 
 # Firebase Configuration
 FIREBASE_CONFIG = {
@@ -286,89 +292,104 @@ def get_top_matches(user_id, user_answers):
 # ─── MAIN ROUTES ──────────────────────────────────────────────────────────────
 @app.route('/')
 def index():
-    return render_template('index.html')
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        print(f"❌ Error in index route: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/test')
 def test():
-    return '<h1 style="color:red;">Server is working!</h1>'
+    try:
+        return '<h1 style="color:green;">✅ Server is working!</h1>'
+    except Exception as e:
+        print(f"❌ Error in test route: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/enter', methods=['GET', 'POST'])
 def enter():
     """Entry to UniVibe - simple email and username login with Firestore storage."""
-    if request.method == 'POST':
-        email = request.form.get('email', '').strip().lower()
-        username = request.form.get('username', '').strip()
-        full_name = request.form.get('full_name', '').strip()
-        
-        if not email or not username or not full_name:
-            flash('Please provide email, username, and full name.', 'warning')
-            return redirect(url_for('enter'))
-        
-        # Validate email format
-        if '@' not in email:
-            flash('Please enter a valid email address.', 'warning')
-            return redirect(url_for('enter'))
-        
-        # Check if email or username already exists
-        conn = get_db()
-        try:
-            existing_email = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
-            existing_username = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+    try:
+        if request.method == 'POST':
+            email = request.form.get('email', '').strip().lower()
+            username = request.form.get('username', '').strip()
+            full_name = request.form.get('full_name', '').strip()
             
-            if existing_email:
-                flash('Email already registered. Please use a different email.', 'warning')
+            if not email or not username or not full_name:
+                flash('Please provide email, username, and full name.', 'warning')
                 return redirect(url_for('enter'))
             
-            if existing_username:
-                flash('Username already taken. Please choose another.', 'warning')
+            # Validate email format
+            if '@' not in email:
+                flash('Please enter a valid email address.', 'warning')
                 return redirect(url_for('enter'))
             
-            # Create new user in SQLite
-            colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
-            color = random.choice(colors)
-            
-            conn.execute(
-                'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
-                (username, email, hashlib.sha256(b'firestore_user').hexdigest(), full_name, color)
-            )
-            conn.commit()
-            
-            # Get the new user ID
-            user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
-            user_id = user['id']
-            
-            # Store user data in Firestore
-            if db:
-                try:
-                    user_data = {
-                        'user_id': user_id,
-                        'email': email,
-                        'username': username,
-                        'full_name': full_name,
-                        'avatar_color': color,
-                        'bio': '',
-                        'is_blacklisted': False,
-                        'created_at': datetime.now(),
-                        'updated_at': datetime.now()
-                    }
-                    db.collection('users').document(email).set(user_data)
-                    print(f"✅ User stored in Firestore: {email}")
-                except Exception as fs_error:
-                    print(f"⚠️ Firestore storage warning: {fs_error}")
-            
-            # Set session
-            session['user_id'] = user_id
-            session['username'] = username
-            session['full_name'] = full_name
-            session['email'] = email
-            session['avatar_color'] = color
-            
-            flash(f'Welcome to UniVibe, {full_name}! 🎉', 'success')
-            return redirect(url_for('dashboard'))
-        finally:
-            conn.close()
-    
-    return render_template('enter.html')
+            # Check if email or username already exists
+            conn = get_db()
+            try:
+                existing_email = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+                existing_username = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+                
+                if existing_email:
+                    flash('Email already registered. Please use a different email.', 'warning')
+                    return redirect(url_for('enter'))
+                
+                if existing_username:
+                    flash('Username already taken. Please choose another.', 'warning')
+                    return redirect(url_for('enter'))
+                
+                # Create new user in SQLite
+                colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
+                color = random.choice(colors)
+                
+                conn.execute(
+                    'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
+                    (username, email, hashlib.sha256(b'firestore_user').hexdigest(), full_name, color)
+                )
+                conn.commit()
+                
+                # Get the new user ID
+                user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+                user_id = user['id']
+                
+                # Store user data in Firestore
+                if db:
+                    try:
+                        user_data = {
+                            'user_id': user_id,
+                            'email': email,
+                            'username': username,
+                            'full_name': full_name,
+                            'avatar_color': color,
+                            'bio': '',
+                            'is_blacklisted': False,
+                            'created_at': datetime.now(),
+                            'updated_at': datetime.now()
+                        }
+                        db.collection('users').document(email).set(user_data)
+                        print(f"✅ User stored in Firestore: {email}")
+                    except Exception as fs_error:
+                        print(f"⚠️ Firestore storage warning: {fs_error}")
+                
+                # Set session
+                session['user_id'] = user_id
+                session['username'] = username
+                session['full_name'] = full_name
+                session['email'] = email
+                session['avatar_color'] = color
+                
+                flash(f'Welcome to UniVibe, {full_name}! 🎉', 'success')
+                return redirect(url_for('dashboard'))
+            finally:
+                conn.close()
+        
+        return render_template('enter.html')
+    except Exception as e:
+        print(f"❌ Error in enter route: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('An error occurred. Please try again.', 'danger')
+        return render_template('enter.html')
 
 @app.route('/logout')
 def logout():
