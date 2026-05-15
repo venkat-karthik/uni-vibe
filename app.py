@@ -34,12 +34,30 @@ ALLOWED_EMAIL_DOMAIN = None  # Will be checked dynamically from Firestore
 try:
     firebase_admin.get_app()
 except ValueError:
-    # Firebase not initialized yet - initialize with default credentials
+    # Firebase not initialized yet - initialize with credentials
     try:
-        cred = credentials.Certificate('serviceAccountKey.json')
-        firebase_admin.initialize_app(cred)
+        # Try to load from environment variable (for Vercel)
+        import json
+        import os
+        
+        service_account_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
+        if service_account_json:
+            print("🔄 Loading Firebase credentials from environment variable...")
+            service_account_info = json.loads(service_account_json)
+            cred = credentials.Certificate(service_account_info)
+            firebase_admin.initialize_app(cred)
+            print("✅ Firebase initialized with environment credentials")
+        else:
+            # Try to load from file (for local development)
+            print("🔄 Loading Firebase credentials from file...")
+            cred = credentials.Certificate('serviceAccountKey.json')
+            firebase_admin.initialize_app(cred)
+            print("✅ Firebase initialized with file credentials")
     except FileNotFoundError:
-        # If service account key not found, use default (for development)
+        print("⚠️ Service account key not found - using default credentials")
+        firebase_admin.initialize_app()
+    except Exception as e:
+        print(f"⚠️ Firebase initialization error: {e}")
         firebase_admin.initialize_app()
 
 # Initialize Firestore
