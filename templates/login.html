@@ -15,8 +15,8 @@
           <!-- Organization Info -->
           <div class="alert alert-info alert-sm mb-4 animate-slide-in-left" style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; color: #4ecdc4; font-size: 0.9rem; animation: slideInLeft 0.5s ease-out;">
             <i class="bi bi-info-circle me-2"></i>
-            <strong>New Horizon India Members Only</strong><br>
-            Use your <code style="background: rgba(0, 0, 0, 0.2); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">@newhorizonindia.edu</code> email to login
+            <strong>Approved Members Only</strong><br>
+            Sign in with an email that has been approved by an existing member
           </div>
 
           <form method="POST" id="loginForm">
@@ -75,7 +75,7 @@
 
 {% block extra_js %}
 <script>
-const ALLOWED_EMAIL_DOMAIN = 'newhorizonindia.edu';
+const ALLOWED_EMAIL_DOMAIN = null; // No domain restriction - dynamic whitelist
 
 function validateLoginEmail(input) {
   const email = input.value.toLowerCase().trim();
@@ -91,12 +91,13 @@ function validateLoginEmail(input) {
 
   feedback.style.display = 'block';
 
-  if (email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
-    feedback.innerHTML = `<span style="color:#43d9ad;"><i class="bi bi-check-circle-fill me-1"></i>Valid ${ALLOWED_EMAIL_DOMAIN} email!</span>`;
+  // Just validate email format
+  if (email.includes('@') && email.includes('.')) {
+    feedback.innerHTML = `<span style="color:#43d9ad;"><i class="bi bi-check-circle-fill me-1"></i>Valid email format!</span>`;
     input.parentElement.style.borderColor = '#43d9ad';
     loginBtn.disabled = false;
   } else {
-    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Email must end with <strong>@${ALLOWED_EMAIL_DOMAIN}</strong></span>`;
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Please enter a valid email address</span>`;
     input.parentElement.style.borderColor = '#ff6584';
     loginBtn.disabled = true;
   }
@@ -105,11 +106,11 @@ function validateLoginEmail(input) {
 // Validate on form submit
 document.getElementById('loginForm').addEventListener('submit', function(e) {
   const email = document.getElementById('emailInput').value.toLowerCase().trim();
-  if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+  if (!email.includes('@') || !email.includes('.')) {
     e.preventDefault();
     const feedback = document.getElementById('emailValidationFeedback');
     feedback.style.display = 'block';
-    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Only ${ALLOWED_EMAIL_DOMAIN} emails are allowed!</span>`;
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Please enter a valid email address!</span>`;
   }
 });
 

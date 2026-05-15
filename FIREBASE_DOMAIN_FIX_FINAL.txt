@@ -1,0 +1,126 @@
+================================================================================
+                 FIREBASE DOMAIN ERROR - FINAL SOLUTION ✅
+================================================================================
+
+ERROR:
+------
+"A valid domain name is required (e.g. 'myapp.com')"
+
+CAUSE:
+------
+Firebase doesn't accept localhost:5000 - it requires a real domain name.
+
+SOLUTION:
+---------
+Use ngrok to create a real domain that tunnels to localhost:5000
+
+WHAT IS NGROK?
+--------------
+A tool that creates a public URL for your local app.
+Example: https://abc123.ngrok.io → http://localhost:5000
+
+QUICK FIX (5 MINUTES):
+----------------------
+
+1. Install ngrok
+   Command: brew install ngrok
+
+2. Start ngrok
+   Command: ngrok http 5000
+
+3. Copy the URL
+   You'll see: https://abc123.ngrok.io
+   Copy: abc123.ngrok.io
+
+4. Add to Firebase
+   - Go to: https://console.firebase.google.com/
+   - Select: unvibe-54ae1
+   - Authentication → Settings
+   - Authorized domains → Add domain
+   - Type: abc123.ngrok.io
+   - Click: Add
+
+5. Wait 5-10 seconds
+
+6. Test
+   - Go to: https://abc123.ngrok.io (use HTTPS!)
+   - Click: Sign in with Google
+   - Should work ✅
+
+IMPORTANT:
+----------
+✅ Use HTTPS (not HTTP)
+✅ Copy only domain (abc123.ngrok.io)
+✅ Don't include https:// when adding to Firebase
+✅ Wait 5-10 seconds after adding
+✅ Clear cache if needed (Cmd+Shift+Delete)
+
+COMMANDS:
+---------
+Install:     brew install ngrok
+Start:       ngrok http 5000
+Stop:        Ctrl+C
+Dashboard:   http://127.0.0.1:4040
+
+EXAMPLE WORKFLOW:
+-----------------
+Terminal:
+$ ngrok http 5000
+
+Output:
+Forwarding    https://abc123.ngrok.io -> http://localhost:5000
+
+What to do:
+1. Copy: abc123.ngrok.io
+2. Add to Firebase
+3. Visit: https://abc123.ngrok.io
+4. Test Google Sign-In
+5. Works! ✅
+
+PROS:
+-----
+✅ Quick setup (5 minutes)
+✅ Free
+✅ Real domain
+✅ Firebase accepts it
+✅ Works immediately
+
+CONS:
+-----
+❌ URL changes each restart
+❌ Need to update Firebase each time
+❌ Only for testing
+
+TROUBLESHOOTING:
+----------------
+Still getting error?
+1. Wait 10-15 seconds
+2. Clear cache (Cmd+Shift+Delete)
+3. Hard refresh (Cmd+Shift+R)
+4. Try again
+
+Can't access app?
+1. Make sure ngrok is running
+2. Use HTTPS (not HTTP)
+3. Check ngrok URL is correct
+4. Check Flask server is running
+
+ALTERNATIVE SOLUTIONS:
+----------------------
+1. Local domain mapping (more complex)
+2. Deploy to production (takes longer)
+
+See: DOMAIN_SOLUTIONS_COMPLETE.md for all options
+
+NEXT STEPS:
+-----------
+1. Install ngrok: brew install ngrok
+2. Start ngrok: ngrok http 5000
+3. Copy URL: abc123.ngrok.io
+4. Add to Firebase
+5. Test: https://abc123.ngrok.io
+6. Google Sign-In works! ✅
+
+STATUS: FOLLOW THESE STEPS TO FIX THE DOMAIN ERROR ✅
+
+================================================================================

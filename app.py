@@ -26,8 +26,9 @@ FIREBASE_CONFIG = {
     "measurementId": "G-Z8MKB0PL4M"
 }
 
-# Organization email domain
-ALLOWED_EMAIL_DOMAIN = "newhorizonindia.edu"
+# Dynamic email whitelist - no hardcoded domain restriction
+# Emails are approved when users first sign up
+ALLOWED_EMAIL_DOMAIN = None  # Will be checked dynamically from Firestore
 
 # Initialize Firebase Admin SDK
 try:
@@ -65,6 +66,37 @@ QUESTIONS = [
     {"id":14,"text":"How would your friends describe your social style?","icon":"🤝","type":"dropdown","options":["Life of the party — always hyper","Friendly but takes time to open up","Deep conversations only — no small talk","Loyal ride-or-die to a close circle","Makes friends everywhere instantly","Quiet but helpful when needed","The planner — always organizing hangouts","The comedian — keeps everyone laughing","The advice-giver / agony uncle or aunt","Loves online friends more than IRL","Super reliable — never cancels","Always late but worth it","Motivates everyone around them","Low-key mysterious","Just vibing — no labels needed"]},
     {"id":15,"text":"What matters most to you in life right now?","icon":"💫","type":"dropdown","options":["Career Growth & Success","Meaningful Friendships","Learning & Personal Growth","Financial Independence","Creative Expression","Making a Social Impact","Family & Relationships","Health & Well-being","Adventure & New Experiences","Academic Excellence","Fame / Recognition / Influence","Inner peace & Mental Health","Building something of my own","Travel & Freedom","Just surviving this semester"]}
 ]
+
+def is_email_approved(email):
+    """Check if email is in the approved whitelist."""
+    try:
+        from firebase_admin import firestore
+        fs_db = firestore.client()
+        
+        # Check if email exists in approved_emails collection
+        doc = fs_db.collection('approved_emails').document(email.lower()).get()
+        return doc.exists
+    except Exception as e:
+        print(f"⚠️ Error checking email approval: {e}")
+        return False
+
+def approve_email(email):
+    """Add email to the approved whitelist."""
+    try:
+        from firebase_admin import firestore
+        fs_db = firestore.client()
+        
+        # Add email to approved_emails collection
+        fs_db.collection('approved_emails').document(email.lower()).set({
+            'email': email.lower(),
+            'approved_at': datetime.now(),
+            'approved_by': 'user_signup'
+        })
+        print(f"✅ Email approved: {email}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Error approving email: {e}")
+        return False
 
 # ─── DATABASE ─────────────────────────────────────────────────────────────────
 def get_db():
@@ -291,9 +323,17 @@ def register():
         full_name = request.form.get('full_name', '').strip()
         bio = request.form.get('bio', '').strip()
         
-        # Validate email domain - only New Horizon India emails allowed
-        if not email.endswith(f'@{ALLOWED_EMAIL_DOMAIN}'):
-            flash(f'Only {ALLOWED_EMAIL_DOMAIN} emails are allowed!', 'danger')
+        # Check if this is the first user (no approved emails yet)
+        try:
+            from firebase_admin import firestore
+            fs_db = firestore.client()
+            approved_count = len(fs_db.collection('approved_emails').stream())
+        except:
+            approved_count = 0
+        
+        # If not the first user, check if email is approved
+        if approved_count > 0 and not is_email_approved(email):
+            flash(f'Email {email} is not approved. Contact an admin to get approved.', 'danger')
             return render_template('register.html')
         
         colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
@@ -307,6 +347,9 @@ def register():
                 
                 # Get the newly created user
                 user = conn.execute('SELECT id, username, full_name, avatar_color FROM users WHERE email=?', (email,)).fetchone()
+                
+                # Approve this email for future signups
+                approve_email(email)
                 
                 # Auto-login the user
                 session['user_id'] = user['id']
@@ -742,9 +785,17 @@ def firebase_auth():
         photo_url = data.get('photoURL', '')
         provider = data.get('provider', 'unknown')
         
-        # Validate email domain
-        if not email.endswith(f'@{ALLOWED_EMAIL_DOMAIN}'):
-            return jsonify({'error': f'Only {ALLOWED_EMAIL_DOMAIN} emails are allowed'}), 403
+        # Check if this is the first user (no approved emails yet)
+        try:
+            from firebase_admin import firestore
+            fs_db = firestore.client()
+            approved_count = len(fs_db.collection('approved_emails').stream())
+        except:
+            approved_count = 0
+        
+        # If not the first user, check if email is approved
+        if approved_count > 0 and not is_email_approved(email):
+            return jsonify({'error': f'Email {email} is not approved. Contact an admin to get approved.'}), 403
         
         # Extract username from email (part before @)
         username = email.split('@')[0]
@@ -786,6 +837,9 @@ def firebase_auth():
                     conn.commit()
                     user_id = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()['id']
                     print(f"✅ User created in SQLite with unique username: {email}")
+                
+                # Approve this email for future signups
+                approve_email(email)
             
             # Also sync to Firestore
             try:

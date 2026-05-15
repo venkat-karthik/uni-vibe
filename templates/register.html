@@ -47,25 +47,24 @@
               </div>
             </div>
 
-            <!-- EMAIL WITH NEW HORIZON INDIA RESTRICTION -->
+            <!-- EMAIL INPUT -->
             <div class="form-group animate-fade-in-up" style="animation-delay: 0.5s;">
-              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Organization Email</label>
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Email Address</label>
               <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
                 <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
                   <i class="bi bi-envelope"></i>
                 </span>
                 <input type="email" name="email" id="emailInput" class="form-control"
-                       placeholder="yourname@newhorizonindia.edu"
-                       oninput="checkEmail(this)"
+                       placeholder="yourname@example.com"
                        style="background: transparent; border: none; color: #ffffff;"
                        required/>
               </div>
               <!-- Live feedback -->
               <div id="emailFeedback" class="mt-2" style="display:none; font-size:0.82rem;"></div>
-              <!-- Restriction notice box -->
+              <!-- Info notice box -->
               <div class="email-rule-box mt-2" style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; color: #4ecdc4; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.85rem;">
-                <i class="bi bi-shield-lock-fill me-1"></i>
-                Only New Horizon India emails ending with <strong>@newhorizonindia.edu</strong> are allowed
+                <i class="bi bi-info-circle-fill me-1"></i>
+                First user can sign up with any email. Future users need approval from an existing member.
               </div>
             </div>
 
@@ -102,7 +101,7 @@
 
 {% block extra_js %}
 <script>
-const ALLOWED_EMAIL_DOMAIN = 'newhorizonindia.edu';
+const ALLOWED_EMAIL_DOMAIN = null; // No domain restriction - dynamic whitelist
 
 function checkEmail(input) {
   const val = input.value.toLowerCase().trim();
@@ -118,12 +117,13 @@ function checkEmail(input) {
 
   feedback.style.display = 'block';
 
-  if (val.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
-    feedback.innerHTML = `<span style="color:#43d9ad;"><i class="bi bi-check-circle-fill me-1"></i>Valid ${ALLOWED_EMAIL_DOMAIN} email!</span>`;
+  // Just validate email format
+  if (val.includes('@') && val.includes('.')) {
+    feedback.innerHTML = `<span style="color:#43d9ad;"><i class="bi bi-check-circle-fill me-1"></i>Valid email format!</span>`;
     input.parentElement.style.borderColor = '#43d9ad';
     submitBtn.disabled = false;
   } else {
-    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Email must end with <strong>@${ALLOWED_EMAIL_DOMAIN}</strong></span>`;
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Please enter a valid email address</span>`;
     input.parentElement.style.borderColor = '#ff6584';
     submitBtn.disabled = true;
   }
@@ -132,11 +132,11 @@ function checkEmail(input) {
 // Validate on form submit
 document.getElementById('registerForm').addEventListener('submit', function(e) {
   const email = document.getElementById('emailInput').value.toLowerCase().trim();
-  if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+  if (!email.includes('@') || !email.includes('.')) {
     e.preventDefault();
     const feedback = document.getElementById('emailFeedback');
     feedback.style.display = 'block';
-    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Only ${ALLOWED_EMAIL_DOMAIN} emails are allowed!</span>`;
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Please enter a valid email address!</span>`;
   }
 });
 
