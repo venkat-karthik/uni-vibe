@@ -1,262 +1,181 @@
 # UniVibe - Quick Start Guide
 
-## 🚀 Getting Started
+## 🚀 Start the Server
 
-### Prerequisites
-- Python 3.8+
-- Virtual environment (venv)
-- Firebase account with project: **univibe-c85c6**
+```bash
+cd /Users/venkatkarthik/Downloads/univibe_v3
+source venv/bin/activate
+python3 app.py
+```
 
-### Installation
+Server will run on: **http://localhost:5000**
 
-1. **Activate virtual environment**:
-   ```bash
-   source venv/bin/activate
-   ```
+## 📍 Key URLs
 
-2. **Install dependencies**:
-   ```bash
-   pip install -r requirements.txt
-   ```
+| Page | URL | Purpose |
+|------|-----|---------|
+| Home | `http://localhost:5000/` | Landing page |
+| Enter/Login | `http://localhost:5000/enter` | Create account or login |
+| Dashboard | `http://localhost:5000/dashboard` | User home (after login) |
+| Quiz | `http://localhost:5000/quiz` | Take the matching quiz |
+| Matches | `http://localhost:5000/results` | View top 5 matches |
+| Profile | `http://localhost:5000/profile/<id>` | View user profile |
+| Chat | `http://localhost:5000/chat/<id>` | Chat with connected user |
+| Notifications | `http://localhost:5000/notifications` | View notifications |
 
-3. **Start the server**:
-   ```bash
-   python3 app.py
-   ```
+## 📝 How to Create an Account
 
-4. **Open in browser**:
-   ```
-   http://localhost:5000
-   ```
-
----
-
-## 🔐 Firebase Setup (IMPORTANT!)
-
-### ⚠️ Current Issue
-You're getting: `Sign-in failed: Firebase: Error (auth/unauthorized-domain)`
-
-### ✅ Fix (Takes 2 minutes)
-
-1. Go to: https://console.firebase.google.com/project/univibe-c85c6/authentication/settings
-2. Scroll to **Authorized domains**
-3. Click **Add domain**
-4. Add: `localhost`
-5. Click **Add domain** again
-6. Add: `127.0.0.1`
-7. Refresh your browser
-8. Try signing in again
-
----
-
-## 📱 Features
-
-### Entry Page (`/enter`)
-- ✅ Google Sign-In button
-- ✅ Direct entry with username
-- ✅ No password required
-
-### Dashboard (`/dashboard`)
-- ✅ View pending connection requests
-- ✅ See accepted connections
-- ✅ Access quiz and matches
-
-### Quiz (`/quiz`)
-- ✅ 15 personality questions
-- ✅ Covers interests, goals, habits
-- ✅ Results saved automatically
-
-### Matches (`/results`)
-- ✅ Top 5 compatible users
-- ✅ Compatibility score
-- ✅ Common interests highlighted
-
-### Profile (`/profile/<user_id>`)
-- ✅ View user information
-- ✅ See quiz answers
-- ✅ Leave reviews and ratings
-- ✅ Send connection requests
-
-### Chat (`/chat/<user_id>`)
-- ✅ Real-time messaging
-- ✅ Message history
-- ✅ Only with connected users
-
-### Notifications (`/notifications`)
-- ✅ Connection requests
-- ✅ Accepted connections
-- ✅ Messages and reviews
-- ✅ System notifications
-
----
-
-## 🗄️ Database
-
-### SQLite (Local)
-- User profiles
-- Quiz answers
-- Connections
-- Messages
-- Reviews
-- Notifications
-
-### Firestore (Cloud)
-- User emails (for sign-in)
-- User profiles (backup)
-- Authentication records
-
----
-
-## 🔑 Authentication Methods
-
-### Method 1: Google Sign-In
-1. Click "Sign in with Google"
-2. Authenticate with your Google account
-3. Automatically creates user account
-4. Stores email in Firestore
-
-### Method 2: Direct Entry
-1. Enter your full name
-2. Choose a username
+1. Go to `http://localhost:5000/enter`
+2. Fill in the form:
+   - **Email**: Your email address (e.g., `user@example.com`)
+   - **Username**: Unique username (e.g., `john_doe`)
+   - **Full Name**: Your name (e.g., `John Doe`)
 3. Click "Enter UniVibe"
-4. Account created instantly
+4. You'll be logged in and redirected to dashboard
 
----
+## 🎯 How to Use the App
 
-## 📁 Project Structure
+### Step 1: Take the Quiz
+- Click "Quiz" in the navigation
+- Answer 15 questions about your interests
+- Submit the quiz
+
+### Step 2: View Your Matches
+- Click "Matches" in the navigation
+- See your top 5 compatible users
+- Click on a profile to view details
+
+### Step 3: Connect with Others
+- Click "Connect" on a profile
+- Wait for them to accept your request
+- Once accepted, you can chat
+
+### Step 4: Chat & Review
+- Click on a connected user to chat
+- Leave a review and rating
+- Build your reputation
+
+## 🔧 Project Structure
 
 ```
 univibe_v3/
-├── app.py                          # Main Flask app
-├── univibe.db                      # SQLite database
-├── requirements.txt                # Python dependencies
-├── .env.example                    # Environment variables
-├── templates/
-│   ├── base.html                   # Base template
-│   ├── index.html                  # Home page
-│   ├── enter.html                  # Entry/Sign-in page
-│   ├── dashboard.html              # User dashboard
-│   ├── quiz.html                   # Quiz page
-│   ├── results.html                # Match results
-│   ├── profile.html                # User profile
-│   ├── chat.html                   # Chat page
-│   └── notifications.html          # Notifications
+├── app.py                    # Main application
+├── univibe.db               # SQLite database
+├── requirements.txt         # Dependencies
+├── templates/               # HTML templates
+│   ├── enter.html          # Login page
+│   ├── dashboard.html      # User dashboard
+│   ├── quiz.html           # Quiz page
+│   ├── results.html        # Matches page
+│   ├── profile.html        # User profile
+│   ├── chat.html           # Chat page
+│   └── ...
 ├── static/
-│   ├── css/
-│   │   ├── style.css               # Main styles
-│   │   ├── modern-style.css        # Modern design
-│   │   └── animations.css          # Animations
-│   └── js/
-│       ├── firebase-config.js      # Firebase setup
-│       └── firebase-auth.js        # Google Sign-In
-└── venv/                           # Virtual environment
+│   ├── css/                # Stylesheets
+│   └── js/                 # JavaScript files
+└── venv/                   # Virtual environment
 ```
 
----
+## 📊 Database
+
+**SQLite Database**: `univibe.db`
+
+Main tables:
+- `users` - User accounts
+- `quiz_answers` - Quiz responses
+- `connections` - User connections
+- `messages` - Chat messages
+- `reviews` - User reviews
+- `notifications` - Notifications
+
+## 🔐 Login System
+
+**Simple Email & Username Login**
+- No password required
+- Email must be unique
+- Username must be unique
+- Data stored in SQLite + Firestore
+
+## 🌐 Firestore Integration
+
+**Optional Cloud Storage**
+- User data backed up in Firestore
+- Requires Firebase service account key
+- Set `FIREBASE_SERVICE_ACCOUNT` environment variable
 
 ## 🛠️ Troubleshooting
 
-### Issue: `auth/unauthorized-domain`
-**Solution**: Add localhost to Firebase authorized domains (see Firebase Setup above)
+### Server won't start?
+```bash
+# Check if port 5000 is in use
+lsof -i :5000
 
-### Issue: `ModuleNotFoundError: No module named 'firebase_admin'`
-**Solution**: Run `pip install -r requirements.txt`
+# Kill the process if needed
+kill -9 <PID>
 
-### Issue: Port 5000 already in use
-**Solution**: Change port in `app.py` line 747: `app.run(port=5001)`
-
-### Issue: Database locked
-**Solution**: Delete `univibe.db` and restart the server
-
-### Issue: Firebase scripts not loading
-**Solution**: Check browser console (F12) for errors, make sure JavaScript is enabled
-
----
-
-## 📊 User Flow
-
-```
-┌─────────────────┐
-│   Visit /       │
-│  (Home Page)    │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Click "Enter"  │
-└────────┬────────┘
-         │
-    ┌────┴────┐
-    │          │
-    ▼          ▼
-┌────────┐  ┌──────────────┐
-│ Google │  │ Direct Entry │
-│Sign-In │  │ (Username)   │
-└────┬───┘  └──────┬───────┘
-     │             │
-     └──────┬──────┘
-            │
-            ▼
-    ┌──────────────┐
-    │  Dashboard   │
-    └──────┬───────┘
-           │
-    ┌──────┴──────┐
-    │             │
-    ▼             ▼
-┌────────┐   ┌────────┐
-│  Quiz  │   │ Matches│
-└────┬───┘   └────┬───┘
-     │            │
-     └──────┬─────┘
-            │
-            ▼
-    ┌──────────────┐
-    │   Profile    │
-    │  & Connect   │
-    └──────┬───────┘
-           │
-           ▼
-    ┌──────────────┐
-    │     Chat     │
-    │   & Review   │
-    └──────────────┘
+# Try again
+python3 app.py
 ```
 
+### Database error?
+```bash
+# Reset database
+rm univibe.db
+
+# Restart server (will recreate database)
+python3 app.py
+```
+
+### Can't login?
+- Make sure email is unique
+- Make sure username is unique
+- Check browser console for errors
+
+## 📱 Features
+
+✅ User registration with email & username
+✅ 15-question compatibility quiz
+✅ Cosine similarity matching algorithm
+✅ Top 5 match recommendations
+✅ User profiles with bio
+✅ Connection requests
+✅ Direct messaging/chat
+✅ User reviews & ratings
+✅ Notification system
+✅ Auto-blacklist after 3 bad reviews
+✅ Cookie consent management
+
+## 🎨 UI/UX
+
+- Modern gradient design
+- Responsive layout
+- Bootstrap 5 framework
+- Smooth animations
+- Dark mode ready
+
+## 📚 Documentation
+
+- `SETUP_COMPLETE.md` - Full setup guide
+- `FIRESTORE_LOGIN_SETUP.md` - Login system details
+- `README.md` - Project overview
+
+## 🚀 Next Steps
+
+1. Create an account
+2. Take the quiz
+3. View your matches
+4. Connect with others
+5. Start chatting!
+
+## 💡 Tips
+
+- Use a real email for testing Firestore integration
+- Try creating multiple accounts to test matching
+- Check notifications for connection requests
+- Leave reviews to build your reputation
+
 ---
 
-## 🎯 Next Steps
+**Ready to go!** 🎉
 
-1. ✅ Add localhost to Firebase authorized domains
-2. ✅ Test Google Sign-In
-3. ✅ Create a user account
-4. ✅ Complete the 15-question quiz
-5. ✅ View your matches
-6. ✅ Connect with other users
-7. ✅ Start chatting!
-
----
-
-## 📞 Support
-
-For issues or questions:
-1. Check the browser console (F12) for error messages
-2. Check the server logs for backend errors
-3. Review the FIREBASE_SETUP_GUIDE.md
-4. Check FIREBASE_LOCALHOST_FIX.md for common issues
-
----
-
-## 📝 Notes
-
-- All data is stored locally in SQLite (except Firestore backup)
-- No real emails are required for direct entry
-- Usernames must be unique
-- Quiz answers are used for matching algorithm
-- Connections are mutual (both users must accept)
-- Reviews can only be left by connected users
-
----
-
-**Status**: ✅ Ready to use (after Firebase setup)
-**Last Updated**: May 16, 2026
+Start the server and visit `http://localhost:5000`

@@ -294,41 +294,73 @@ def test():
 
 @app.route('/enter', methods=['GET', 'POST'])
 def enter():
-    """Entry to UniVibe - supports both direct entry and Firebase Google Sign-In."""
+    """Entry to UniVibe - simple email and username login with Firestore storage."""
     if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
         username = request.form.get('username', '').strip()
         full_name = request.form.get('full_name', '').strip()
         
-        if not username or not full_name:
-            flash('Please provide both username and name.', 'warning')
+        if not email or not username or not full_name:
+            flash('Please provide email, username, and full name.', 'warning')
             return redirect(url_for('enter'))
         
-        # Check if username already exists
+        # Validate email format
+        if '@' not in email:
+            flash('Please enter a valid email address.', 'warning')
+            return redirect(url_for('enter'))
+        
+        # Check if email or username already exists
         conn = get_db()
         try:
-            existing = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
-            if existing:
+            existing_email = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+            existing_username = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+            
+            if existing_email:
+                flash('Email already registered. Please use a different email.', 'warning')
+                return redirect(url_for('enter'))
+            
+            if existing_username:
                 flash('Username already taken. Please choose another.', 'warning')
                 return redirect(url_for('enter'))
             
-            # Create new user
+            # Create new user in SQLite
             colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
             color = random.choice(colors)
             
             conn.execute(
                 'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
-                (username, f'{username}@univibe.local', hashlib.sha256(b'guest').hexdigest(), full_name, color)
+                (username, email, hashlib.sha256(b'firestore_user').hexdigest(), full_name, color)
             )
             conn.commit()
             
             # Get the new user ID
-            user = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+            user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
             user_id = user['id']
+            
+            # Store user data in Firestore
+            if db:
+                try:
+                    user_data = {
+                        'user_id': user_id,
+                        'email': email,
+                        'username': username,
+                        'full_name': full_name,
+                        'avatar_color': color,
+                        'bio': '',
+                        'is_blacklisted': False,
+                        'created_at': datetime.now(),
+                        'updated_at': datetime.now()
+                    }
+                    db.collection('users').document(email).set(user_data)
+                    print(f"✅ User stored in Firestore: {email}")
+                except Exception as fs_error:
+                    print(f"⚠️ Firestore storage warning: {fs_error}")
             
             # Set session
             session['user_id'] = user_id
             session['username'] = username
             session['full_name'] = full_name
+            session['email'] = email
             session['avatar_color'] = color
             
             flash(f'Welcome to UniVibe, {full_name}! 🎉', 'success')
@@ -691,99 +723,6 @@ def cookie_consent():
         return jsonify({'success': True})
     finally:
         conn.close()
-
-# ─── FIREBASE AUTH ─────────────────────────────────────────────────────────────
-@app.route('/api/firebase_auth', methods=['POST'])
-def firebase_auth():
-    """Handle Firebase authentication - store in Firestore and create session."""
-    try:
-        data = request.get_json()
-        uid = data.get('uid')
-        email = data.get('email', '').strip().lower()
-        display_name = data.get('displayName', '').strip()
-        photo_url = data.get('photoURL', '')
-        provider = data.get('provider', 'unknown')
-        
-        print(f"🔐 Firebase auth request: {email} ({provider})")
-        
-        # Extract username from email (part before @)
-        username = email.split('@')[0]
-        
-        # Check if user exists in SQLite
-        conn = get_db()
-        try:
-            existing_user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
-            
-            if existing_user:
-                # User exists, update their info
-                user_id = existing_user['id']
-                conn.execute(
-                    'UPDATE users SET full_name=?, avatar_color=? WHERE id=?',
-                    (display_name or username, '#6c63ff', user_id)
-                )
-                conn.commit()
-                print(f"✅ User updated in SQLite: {email}")
-            else:
-                # Create new user in SQLite
-                colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
-                color = random.choice(colors)
-                
-                conn.execute(
-                    'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
-                    (username, email, hashlib.sha256(b'firebase').hexdigest(), display_name or username, color)
-                )
-                conn.commit()
-                
-                # Get the new user ID
-                user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
-                user_id = user['id']
-                print(f"✅ User created in SQLite: {email}")
-            
-            # Also store in Firestore for reference
-            if db:
-                try:
-                    user_data = {
-                        'uid': uid,
-                        'email': email,
-                        'full_name': display_name or username,
-                        'username': username,
-                        'provider': provider,
-                        'photoURL': photo_url,
-                        'created_at': datetime.now(),
-                        'updated_at': datetime.now()
-                    }
-                    db.collection('users').document(uid).set(user_data, merge=True)
-                    print(f"✅ User stored in Firestore: {email}")
-                except Exception as fs_error:
-                    print(f"⚠️ Firestore storage warning: {fs_error}")
-            
-            # Set session
-            session['user_id'] = user_id
-            session['username'] = username
-            session['full_name'] = display_name or username
-            session['avatar_color'] = '#6c63ff'
-            session['email'] = email
-            
-            print(f"✅ Firebase auth successful: {email}")
-            return jsonify({
-                'success': True,
-                'user_id': user_id,
-                'message': f'Welcome {display_name or username}!'
-            }), 200
-            
-        except Exception as db_error:
-            print(f"❌ Database error: {db_error}")
-            import traceback
-            traceback.print_exc()
-            return jsonify({'error': f'Database error: {str(db_error)}'}), 500
-        finally:
-            conn.close()
-            
-    except Exception as e:
-        print(f"❌ Firebase auth error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     init_db()
