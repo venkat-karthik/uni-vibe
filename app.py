@@ -323,16 +323,15 @@ def register():
         full_name = request.form.get('full_name', '').strip()
         bio = request.form.get('bio', '').strip()
         
-        # Check if this is the first user (no approved emails yet)
+        # Check if this is the first user (no users in database yet)
+        conn = get_db()
         try:
-            from firebase_admin import firestore
-            fs_db = firestore.client()
-            approved_count = len(fs_db.collection('approved_emails').stream())
-        except:
-            approved_count = 0
+            user_count = conn.execute('SELECT COUNT(*) as c FROM users').fetchone()['c']
+        finally:
+            conn.close()
         
         # If not the first user, check if email is approved
-        if approved_count > 0 and not is_email_approved(email):
+        if user_count > 0 and not is_email_approved(email):
             flash(f'Email {email} is not approved. Contact an admin to get approved.', 'danger')
             return render_template('register.html')
         
@@ -785,16 +784,15 @@ def firebase_auth():
         photo_url = data.get('photoURL', '')
         provider = data.get('provider', 'unknown')
         
-        # Check if this is the first user (no approved emails yet)
+        # Check if this is the first user (no users in database yet)
+        conn = get_db()
         try:
-            from firebase_admin import firestore
-            fs_db = firestore.client()
-            approved_count = len(fs_db.collection('approved_emails').stream())
-        except:
-            approved_count = 0
+            user_count = conn.execute('SELECT COUNT(*) as c FROM users').fetchone()['c']
+        finally:
+            conn.close()
         
         # If not the first user, check if email is approved
-        if approved_count > 0 and not is_email_approved(email):
+        if user_count > 0 and not is_email_approved(email):
             return jsonify({'error': f'Email {email} is not approved. Contact an admin to get approved.'}), 403
         
         # Extract username from email (part before @)
@@ -885,7 +883,42 @@ def firebase_auth():
         print(f"❌ Firebase auth error: {e}")
         return jsonify({'error': str(e)}), 500
 
+# ─── ADMIN ENDPOINTS ──────────────────────────────────────────────────────────
+@app.route('/api/admin/clear_approved_emails', methods=['POST'])
+def clear_approved_emails():
+    """Clear all approved emails from Firestore (for testing/reset)."""
+    try:
+        from firebase_admin import firestore
+        fs_db = firestore.client()
+        
+        # Delete all documents in approved_emails collection
+        docs = fs_db.collection('approved_emails').stream()
+        for doc in docs:
+            doc.reference.delete()
+        
+        print("✅ Cleared all approved emails from Firestore")
+        return jsonify({'success': True, 'message': 'Approved emails cleared'}), 200
+    except Exception as e:
+        print(f"❌ Error clearing approved emails: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/get_approved_emails', methods=['GET'])
+def get_approved_emails():
+    """Get list of all approved emails (for debugging)."""
+    try:
+        from firebase_admin import firestore
+        fs_db = firestore.client()
+        
+        docs = fs_db.collection('approved_emails').stream()
+        emails = [doc.id for doc in docs]
+        
+        return jsonify({'approved_emails': emails, 'count': len(emails)}), 200
+    except Exception as e:
+        print(f"❌ Error getting approved emails: {e}")
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     init_db()
     print("Starting UniVibe on http://localhost:5000")
     app.run(debug=True, use_reloader=False, port=5000, host='127.0.0.1')
+
