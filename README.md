@@ -1,85 +1,160 @@
-# 🎯 UniVibe — Find Your People
+# UniVibe - Find Your Vibe, Find Your People
 
-A university social matching web app. Answer 15 questions about your sports, projects, music, goals, and personality — get matched with 5 people who share your vibe!
+A modern web application for connecting students based on personality compatibility using cosine similarity matching.
 
-## ✨ Features
-- 🔐 User Registration & Login (session-based)
-- 🎯 15-question quiz (sports, tech, music, movies, goals, personality + more)
-- 🤝 Top 5 vibe matches using answer similarity algorithm
-- 📊 Match score with shared interests display
-- 👤 Profile page showing full quiz answers
-- 🎨 Dark mode, animated UI with Bootstrap 5
+## Quick Start
 
-## 🛠️ Tech Stack
-- **Backend:** Python Flask + SQLite
-- **Frontend:** Bootstrap 5, HTML5, CSS3, Vanilla JS
-- **Fonts:** Syne (headers) + DM Sans (body) via Google Fonts
-- **No AI, No paid APIs required**
+### Prerequisites
+- Python 3.8+
+- Firebase project
+- pip
 
-## 🚀 Setup & Run
+### Installation
 
 ```bash
-# 1. Clone or extract the project folder
-cd univibe
+# Clone repository
+git clone https://github.com/venkat-karthik/unvibe.git
+cd unvibe
 
-# 2. Create a virtual environment
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
-# 3. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 4. Run the app
-python app.py
+# Run application
+python3 app.py
 ```
 
-Visit **http://localhost:5000** in your browser.
+Visit http://localhost:5000
 
-## 📁 Project Structure
+## Features
+
+✅ Email/Password authentication
+✅ Google Sign-In/Sign-Up
+✅ Personality quiz (15 questions)
+✅ Smart matching algorithm (cosine similarity)
+✅ Real-time chat
+✅ Connection requests
+✅ User reviews and ratings
+✅ Notifications
+✅ Modern glassmorphism UI
+✅ Firestore integration
+✅ Auto-blacklist on bad reviews
+
+## Tech Stack
+
+- **Backend**: Flask (Python)
+- **Database**: SQLite + Firestore
+- **Authentication**: Firebase Auth
+- **Frontend**: HTML, CSS, JavaScript
+- **Styling**: Bootstrap 5 + Custom CSS
+
+## Project Structure
+
 ```
 univibe/
-├── app.py                  # Flask app, routes, matching algorithm
-├── requirements.txt
-├── univibe.db              # SQLite DB (auto-created on first run)
-├── templates/
-│   ├── base.html           # Navbar + layout
-│   ├── index.html          # Landing page
+├── app.py                      # Main Flask application
+├── firebase_helpers.py         # Firebase integration
+├── requirements.txt            # Dependencies
+├── templates/                  # HTML templates
+│   ├── base.html
 │   ├── login.html
 │   ├── register.html
 │   ├── dashboard.html
-│   ├── quiz.html           # 15-question quiz form
-│   ├── results.html        # Top 5 matches display
-│   └── profile.html        # User profile with answers
-└── static/
-    └── css/
-        └── style.css       # Full dark theme stylesheet
+│   ├── quiz.html
+│   ├── results.html
+│   ├── profile.html
+│   ├── chat.html
+│   └── notifications.html
+├── static/
+│   ├── css/
+│   │   ├── modern-style.css
+│   │   ├── animations.css
+│   │   └── style.css
+│   └── js/
+│       ├── firebase-config.js
+│       └── firebase-auth-enhanced.js
+└── univibe.db                  # SQLite database
 ```
 
-## 🎯 How Matching Works
-1. Each user's 15 answers are stored as a JSON object in SQLite.
-2. When you view results, your answers are compared against all other users.
-3. For each pair of answers to the same question, a match counts if both answers are identical.
-4. Score = (matched answers / total answered questions) × 100.
-5. Top 5 highest-scoring users are returned as your matches.
+## Database Schema
 
-## 📋 Quiz Questions Cover
-1. Favourite sport to watch (dropdown with 15 options)
-2. Favourite sport to play (dropdown)
-3. Type of projects (Web Dev, ML, Cybersecurity, etc.)
-4. Preferred tech stack / language
-5. Music genre
-6. Movies / Series preference
-7. Study style
-8. Free time activities
-9. Campus club preference
-10. Career goals (5-year vision)
-11. Personality type
-12. Food preferences
-13. Travel destination type
-14. Social style
-15. What matters most in life
+- **users**: User profiles and authentication
+- **quiz_answers**: User quiz responses
+- **connections**: Connection requests and status
+- **messages**: Chat messages
+- **reviews**: User reviews and ratings
+- **notifications**: User notifications
+- **blacklist**: Blacklisted users
 
-## 💡 Tips
-- Register at least 2-3 test accounts and complete the quiz with each to see matches.
-- The more users take the quiz, the better the matches get.
-- Retake the quiz anytime — it updates your answers.
+## API Endpoints
+
+### Auth
+- `POST /register` - Register user
+- `POST /login` - Login user
+- `GET /logout` - Logout user
+- `POST /api/firebase_auth` - Firebase auth
+
+### User
+- `GET /dashboard` - Dashboard
+- `GET /profile/<uid>` - User profile
+- `POST /api/cookie_consent` - Cookie consent
+
+### Quiz & Matching
+- `GET /quiz` - Quiz page
+- `POST /quiz` - Submit quiz
+- `GET /results` - View matches
+
+### Connections
+- `POST /connect/<uid>` - Send request
+- `GET /connection/respond/<conn_id>/<action>` - Respond
+
+### Chat
+- `GET /chat/<uid>` - Chat page
+- `POST /api/send_message` - Send message
+- `GET /api/get_messages/<uid>` - Get messages
+
+### Notifications
+- `GET /notifications` - View notifications
+- `GET /api/notifications/count` - Unread count
+
+### Reviews
+- `POST /review/<uid>` - Submit review
+
+## Configuration
+
+### Firebase Console Setup
+
+1. Go to https://console.firebase.google.com/
+2. Select project: **unvibe-54ae1**
+3. Go to **Authentication → Settings → Authorized domains**
+4. Add:
+   - `localhost:5000`
+   - `127.0.0.1:5000`
+5. Remove any old domains
+
+### Environment Variables
+
+Create `.env` file with Firebase credentials:
+```
+FIREBASE_API_KEY=your_api_key
+FIREBASE_AUTH_DOMAIN=your_auth_domain
+FIREBASE_PROJECT_ID=your_project_id
+```
+
+## Documentation
+
+- `IMMEDIATE_ACTION_REQUIRED.md` - Firebase Console setup
+- `FIREBASE_CONSOLE_FIX.md` - Detailed Firebase configuration
+- `FINAL_FIX_SUMMARY.md` - System overview
+- `DYNAMIC_EMAIL_WHITELIST.md` - Email approval system
+
+## License
+
+MIT License
+
+## Author
+
+Venkat Karthik
