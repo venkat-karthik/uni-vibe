@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Chat with {{ other_user['full_name'] or other_user['username'] }} — UniVibe{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <!-- CHAT HEADER -->
+      <div class="uv-card chat-header-card mb-0" style="border-radius:var(--radius-lg) var(--radius-lg) 0 0; border-bottom:none;">
+        <div class="d-flex align-items-center gap-3">
+          <a href="{{ url_for('profile', uid=other_user['id']) }}" class="btn btn-sm uv-btn-outline px-2">
+            <i class="bi bi-arrow-left"></i>
+          </a>
+          <div class="av-circle xl" style="background:{{ other_user['avatar_color'] }}">
+            {{ (other_user['full_name'] or other_user['username'])[0].upper() }}
+          </div>
+          <div>
+            <h5 class="mb-0">{{ other_user['full_name'] or other_user['username'] }}</h5>
+            <span class="text-muted small">@{{ other_user['username'] }}</span>
+          </div>
+          <div class="ms-auto">
+            <span class="online-dot"></span>
+            <span class="text-muted small">UniVibe Chat</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MESSAGES AREA -->
+      <div class="chat-messages-box" id="chatBox">
+        <div id="messagesContainer">
+          {% if messages %}
+            {% for m in messages %}
+            <div class="msg-row {% if m['sender_id'] == session['user_id'] %}msg-me{% else %}msg-them{% endif %}">
+              {% if m['sender_id'] != session['user_id'] %}
+              <div class="av-circle" style="background:{{ m['avatar_color'] }};width:30px;height:30px;font-size:12px;flex-shrink:0;">
+                {{ (m['full_name'] or '?')[0].upper() }}
+              </div>
+              {% endif %}
+              <div class="msg-bubble">
+                <div class="msg-content">{{ m['content'] }}</div>
+                <div class="msg-time">{{ m['created_at'][11:16] }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-muted py-5" id="emptyMsg">
+              <div style="font-size:3rem">💬</div>
+              <p class="mt-3">No messages yet. Say hello!</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- INPUT BOX -->
+      <div class="uv-card chat-input-card" style="border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-top:1px solid var(--border);">
+        <div class="d-flex gap-3 align-items-center">
+          <input type="text" id="msgInput" class="form-control uv-input"
+                 placeholder="Type your message..."
+                 onkeydown="if(event.key==='Enter') sendMessage()"/>
+          <button class="btn uv-btn-primary px-4" onclick="sendMessage()">
+            <i class="bi bi-send-fill"></i>
+          </button>
+        </div>
+        <div class="mt-2">
+          <small class="text-muted"><i class="bi bi-shield-lock me-1" style="color:var(--mint)"></i>
+            End-to-end encrypted · Cookie consent active ✅</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const OTHER_ID = {{ other_user['id'] }};
+const MY_ID = {{ session['user_id'] }};
+
+// Scroll to bottom
+function scrollBottom() {
+  const box = document.getElementById('chatBox');
+  box.scrollTop = box.scrollHeight;
+}
+scrollBottom();
+
+// Send message
+function sendMessage() {
+  const input = document.getElementById('msgInput');
+  const content = input.value.trim();
+  if (!content) return;
+  input.value = '';
+
+  fetch('/api/send_message', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({receiver_id: OTHER_ID, content: content})
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      // Remove empty message if present
+      const empty = document.getElementById('emptyMsg');
+      if (empty) empty.remove();
+      appendMessage(content, data.time, true, null, null);
+    }
+  });
+}
+
+// Append a message bubble to the chat
+function appendMessage(content, time, isMe, avatarColor, name) {
+  const container = document.getElementById('messagesContainer');
+  const div = document.createElement('div');
+  div.className = 'msg-row ' + (isMe ? 'msg-me' : 'msg-them');
+  let avatarHtml = '';
+  if (!isMe && avatarColor && name) {
+    avatarHtml = `<div class="av-circle" style="background:${avatarColor};width:30px;height:30px;font-size:12px;flex-shrink:0;">${name[0].toUpperCase()}</div>`;
+  }
+  div.innerHTML = `${avatarHtml}<div class="msg-bubble"><div class="msg-content">${content}</div><div class="msg-time">${time}</div></div>`;
+  container.appendChild(div);
+  scrollBottom();
+}
+
+// Poll for new messages every 3 seconds
+let lastMsgId = {{ messages[-1]['id'] if messages else 0 }};
+function pollMessages() {
+  fetch('/api/get_messages/' + OTHER_ID)
+    .then(r => r.json())
+    .then(msgs => {
+      const container = document.getElementById('messagesContainer');
+      const newMsgs = msgs.filter(m => m.id > lastMsgId);
+      newMsgs.forEach(m => {
+        if (m.sender_id !== MY_ID) {
+          const empty = document.getElementById('emptyMsg');
+          if (empty) empty.remove();
+          appendMessage(m.content, m.time, false, m.avatar_color, m.name);
+          lastMsgId = m.id;
+        } else {
+          lastMsgId = Math.max(lastMsgId, m.id);
+        }
+      });
+    }).catch(() => {});
+}
+setInterval(pollMessages, 3000);
+</script>
+{% endblock %}

@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user['full_name'] or profile_user['username'] }} — UniVibe{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+
+      <!-- BLACKLIST BANNER -->
+      {% if is_blacklisted %}
+      <div class="alert uv-alert mb-4" style="border-left:4px solid #ff6584; background:rgba(255,101,132,0.08);">
+        <i class="bi bi-slash-circle-fill me-2" style="color:#ff6584"></i>
+        <strong>This user has been suspended</strong> due to 3 or more bad reviews.
+      </div>
+      {% endif %}
+
+      <!-- PROFILE HEADER -->
+      <div class="uv-card profile-hero mb-4">
+        <div class="profile-cover" style="background: linear-gradient(135deg, {{ profile_user['avatar_color'] }}33, {{ profile_user['avatar_color'] }}66)"></div>
+        <div class="profile-info">
+          <div class="av-circle xxl" style="background:{{ profile_user['avatar_color'] }}">
+            {{ (profile_user['full_name'] or profile_user['username'])[0].upper() }}
+          </div>
+          <div class="ms-4">
+            <h2 class="profile-name mb-0">{{ profile_user['full_name'] or profile_user['username'] }}</h2>
+            <span class="text-muted">@{{ profile_user['username'] }}</span>
+            {% if avg_rating %}
+            <div class="mt-1">
+              {% for i in range(avg_rating|int) %}<i class="bi bi-star-fill" style="color:var(--gold);font-size:0.85rem"></i>{% endfor %}
+              {% if avg_rating % 1 >= 0.5 %}<i class="bi bi-star-half" style="color:var(--gold);font-size:0.85rem"></i>{% endif %}
+              <span class="ms-1 text-muted small">{{ avg_rating }}/5</span>
+            </div>
+            {% endif %}
+            <p class="profile-bio mt-2 mb-0">{{ profile_user['bio'] or 'No bio added yet.' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTION BUTTONS ROW -->
+      {% if profile_user['id'] != session.get('user_id') and not is_blacklisted %}
+      <div class="uv-card mb-4">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+          <div>
+            {% if connected %}
+              <span class="uv-badge" style="background:rgba(67,217,173,0.15);border-color:rgba(67,217,173,0.4);color:#43d9ad;">
+                <i class="bi bi-check-circle-fill me-1"></i>Connected
+              </span>
+            {% elif conn_status == 'pending' and conn_direction == 'sent' %}
+              <span class="uv-badge" style="background:rgba(247,201,72,0.15);border-color:rgba(247,201,72,0.4);color:var(--gold);">
+                <i class="bi bi-hourglass-split me-1"></i>Request Sent
+              </span>
+            {% elif conn_status == 'pending' and conn_direction == 'received' %}
+              <span class="uv-badge" style="color:#ff6584;border-color:rgba(255,101,132,0.4);">
+                <i class="bi bi-person-plus me-1"></i>Wants to connect
+              </span>
+            {% else %}
+              <form method="POST" action="{{ url_for('connect', uid=profile_user['id']) }}" style="display:inline">
+                <button class="btn uv-btn-primary btn-sm">
+                  <i class="bi bi-person-plus-fill me-1"></i>Connect
+                </button>
+              </form>
+            {% endif %}
+          </div>
+          <div class="d-flex gap-2">
+            {% if connected %}
+              {% if cookie_accepted %}
+                <a href="{{ url_for('chat', uid=profile_user['id']) }}" class="btn uv-btn-primary btn-sm">
+                  <i class="bi bi-chat-dots-fill me-1"></i>Chat
+                </a>
+              {% else %}
+                <button class="btn uv-btn-outline btn-sm" onclick="showCookiePrompt()">
+                  <i class="bi bi-chat-dots me-1"></i>Chat (Accept Cookies)
+                </button>
+              {% endif %}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- QUIZ ANSWERS -->
+      {% if answer_map %}
+      <div class="uv-card mb-4">
+        <h4 class="mb-4"><i class="bi bi-person-lines-fill me-2" style="color:#6c63ff"></i>Vibe Profile</h4>
+        <div class="answer-grid">
+          {% for question, data in answer_map.items() %}
+          <div class="answer-item">
+            <span class="answer-icon">{{ data.icon }}</span>
+            <div>
+              <div class="answer-q">{{ question }}</div>
+              <div class="answer-val">{{ data.val }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- REVIEWS SECTION -->
+      <div class="uv-card mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+          <h4 class="mb-0"><i class="bi bi-star-fill me-2" style="color:var(--gold)"></i>Reviews
+            <span class="text-muted small ms-2">({{ reviews|length }})</span>
+          </h4>
+          {% if avg_rating %}
+          <div class="score-num" style="color:var(--gold)">{{ avg_rating }}/5 ⭐</div>
+          {% endif %}
+        </div>
+
+        <!-- LEAVE A REVIEW FORM -->
+        {% if connected and not already_reviewed and profile_user['id'] != session.get('user_id') and not is_blacklisted %}
+        <div class="review-form-box mb-4">
+          <h6 class="mb-3"><i class="bi bi-pencil-square me-2"></i>Leave a Review</h6>
+          <form method="POST" action="{{ url_for('submit_review', uid=profile_user['id']) }}">
+            <div class="mb-3">
+              <label class="uv-label">Rating</label>
+              <div class="star-rating" id="starRating">
+                {% for i in range(1,6) %}
+                <span class="star" data-val="{{ i }}" onclick="setRating({{ i }})">★</span>
+                {% endfor %}
+              </div>
+              <input type="hidden" name="rating" id="ratingInput" value="5"/>
+            </div>
+            <div class="mb-3">
+              <label class="uv-label">Comment <span class="text-muted">(optional)</span></label>
+              <textarea name="comment" class="form-control uv-input" rows="3"
+                        placeholder="Share your experience connecting with this person..."></textarea>
+            </div>
+            <button type="submit" class="btn uv-btn-primary btn-sm px-4">
+              <i class="bi bi-send me-1"></i>Submit Review
+            </button>
+          </form>
+        </div>
+        {% elif already_reviewed %}
+        <div class="mb-3 text-muted small"><i class="bi bi-check-circle me-1" style="color:#43d9ad"></i>You've already reviewed this person.</div>
+        {% elif not connected and profile_user['id'] != session.get('user_id') %}
+        <div class="mb-3 text-muted small"><i class="bi bi-lock me-1"></i>Connect with this person to leave a review.</div>
+        {% endif %}
+
+        <!-- REVIEWS LIST -->
+        {% if reviews %}
+          {% for r in reviews %}
+          <div class="review-item">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <div class="av-circle" style="background:{{ r['avatar_color'] }}; width:38px;height:38px;font-size:14px;">
+                {{ (r['full_name'] or r['username'])[0].upper() }}
+              </div>
+              <div>
+                <strong>{{ r['full_name'] or r['username'] }}</strong>
+                <div class="review-stars">
+                  {% for i in range(r['rating']) %}<i class="bi bi-star-fill" style="color:var(--gold);font-size:0.8rem"></i>{% endfor %}
+                  {% for i in range(5 - r['rating']) %}<i class="bi bi-star" style="color:var(--muted);font-size:0.8rem"></i>{% endfor %}
+                  {% if r['rating'] <= 2 %}
+                  <span class="ms-2" style="color:#ff6584;font-size:0.75rem;font-weight:600;">Bad Review</span>
+                  {% endif %}
+                </div>
+              </div>
+              <span class="ms-auto text-muted small">{{ r['created_at'][:10] }}</span>
+            </div>
+            {% if r['comment'] %}
+            <p class="review-comment">{{ r['comment'] }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-muted text-center py-3">No reviews yet. Be the first!</p>
+        {% endif %}
+      </div>
+
+      <div class="text-center mt-4">
+        <a href="{{ url_for('results') }}" class="btn uv-btn-outline me-2">
+          <i class="bi bi-arrow-left me-2"></i>Back to Matches
+        </a>
+        {% if profile_user['id'] == session.get('user_id') %}
+        <a href="{{ url_for('quiz') }}" class="btn uv-btn-primary">
+          <i class="bi bi-pencil-square me-2"></i>Edit My Quiz
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Star rating
+let currentRating = 5;
+function setRating(val) {
+  currentRating = val;
+  document.getElementById('ratingInput').value = val;
+  document.querySelectorAll('.star').forEach((s, i) => {
+    s.style.color = i < val ? 'var(--gold)' : 'var(--muted)';
+  });
+}
+setRating(5);
+
+function showCookiePrompt() {
+  document.getElementById('cookieBanner').style.display = 'block';
+  document.getElementById('cookieBanner').scrollIntoView({behavior:'smooth'});
+}
+</script>
+{% endblock %}

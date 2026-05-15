@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Your Matches — UniVibe{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="text-center mb-5">
+    <div class="results-badge">🎯 Your UniVibe Matches</div>
+    <h2 class="results-title mt-3">Your Top <span class="accent-text">5</span> Vibe Matches</h2>
+    <p class="text-muted">Based on your quiz answers, here are the people you'll most likely vibe with!</p>
+  </div>
+
+  {% if matches %}
+    <div class="row g-4 justify-content-center">
+      {% for m in matches %}
+      <div class="col-md-6 col-lg-4 match-wrap" style="animation-delay:{{ loop.index0 * 0.12 }}s">
+        <div class="uv-card match-card h-100 {% if loop.first %}top-match{% endif %}">
+          {% if loop.first %}
+          <div class="top-badge">⭐ Best Match</div>
+          {% endif %}
+          <!-- Rank -->
+          <div class="match-rank">#{{ loop.index }}</div>
+          <!-- Avatar + Name -->
+          <div class="match-header">
+            <div class="av-circle xl" style="background:{{ m.avatar_color }}">
+              {{ m.full_name[0].upper() }}
+            </div>
+            <div class="ms-3">
+              <h4 class="mb-0 match-name">{{ m.full_name }}</h4>
+              <span class="text-muted small">@{{ m.username }}</span>
+            </div>
+          </div>
+          <!-- Score Bar -->
+          <div class="score-section mt-3">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <span class="score-label">Vibe Score</span>
+              <span class="score-num" style="color:{{ m.avatar_color }}">{{ m.score }}%</span>
+            </div>
+            <div class="score-bar-bg">
+              <div class="score-bar-fill" style="width:{{ m.score }}%; background:{{ m.avatar_color }}"></div>
+            </div>
+          </div>
+          <!-- Bio -->
+          {% if m.bio %}
+          <p class="match-bio mt-3"><i class="bi bi-quote me-1"></i>{{ m.bio }}</p>
+          {% endif %}
+          <!-- Common Interests -->
+          {% if m.common %}
+          <div class="common-section mt-3">
+            <div class="common-title"><i class="bi bi-link-45deg"></i> In Common</div>
+            <div class="common-tags mt-2">
+              {% for c in m.common %}
+              <span class="common-tag">{{ c.val }}</span>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          <!-- Action -->
+          <div class="mt-4">
+            <a href="{{ url_for('profile', uid=m.user_id) }}" class="btn uv-btn-outline w-100">
+              <i class="bi bi-person-circle me-2"></i>View Profile
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="text-center mt-5">
+      <a href="{{ url_for('quiz') }}" class="btn uv-btn-outline btn-lg me-3">
+        <i class="bi bi-arrow-repeat me-2"></i>Retake Quiz
+      </a>
+      <a href="{{ url_for('dashboard') }}" class="btn uv-btn-primary btn-lg">
+        <i class="bi bi-house me-2"></i>Back to Dashboard
+      </a>
+    </div>
+
+  {% else %}
+    <div class="text-center py-5">
+      <div class="empty-icon">🌐</div>
+      <h3 class="mt-4">No matches yet!</h3>
+      <p class="text-muted">You're the first one here, or other users haven't completed the quiz yet.<br/>
+        Share UniVibe with your classmates to get matches!</p>
+      <a href="{{ url_for('dashboard') }}" class="btn uv-btn-primary mt-3">Back to Dashboard</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Animate match cards on load
+  document.querySelectorAll('.match-wrap').forEach((el, i) => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    setTimeout(() => {
+      el.style.transition = 'all 0.5s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    }, i * 120);
+  });
+</script>
+{% endblock %}

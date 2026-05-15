@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}UniVibe — Find Your People{% endblock %}
+{% block content %}
+
+<!-- HERO -->
+<section class="uv-hero">
+  <div class="hero-bg-blobs">
+    <div class="blob b1"></div>
+    <div class="blob b2"></div>
+    <div class="blob b3"></div>
+  </div>
+  <div class="container text-center hero-content">
+    <div class="hero-badge mb-3">✨ University Connection Platform</div>
+    <h1 class="hero-title">Find your <span class="accent-text">vibe</span>.<br/>Find your people.</h1>
+    <p class="hero-sub">Answer 15 quick questions about your passions, habits, and dreams.<br/>
+      UniVibe matches you with <strong>5 people</strong> who share your wavelength.</p>
+    <div class="d-flex gap-3 justify-content-center flex-wrap mt-4">
+      <a href="{{ url_for('register') }}" class="btn uv-btn-primary btn-lg px-5">
+        <i class="bi bi-rocket-takeoff me-2"></i>Get Started Free
+      </a>
+      <a href="{{ url_for('login') }}" class="btn uv-btn-outline btn-lg px-5">
+        <i class="bi bi-box-arrow-in-right me-2"></i>Login
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="py-5 mt-3">
+  <div class="container">
+    <h2 class="section-title text-center mb-5">How UniVibe Works</h2>
+    <div class="row g-4 justify-content-center">
+      {% set steps = [
+        ("1", "bi-person-plus-fill", "#6c63ff", "Create Account", "Sign up with your name and email. Takes 30 seconds."),
+        ("2", "bi-patch-question-fill", "#ff6584", "Take the Quiz", "15 questions covering sports, projects, music, food, goals and more."),
+        ("3", "bi-people-fill", "#43d9ad", "Get Matched", "Our algorithm finds your top 5 vibe matches on campus instantly.")
+      ] %}
+      {% for num, icon, color, title, desc in steps %}
+      <div class="col-md-4">
+        <div class="uv-card step-card text-center h-100">
+          <div class="step-icon-wrap" style="--sc:{{ color }}">
+            <i class="bi {{ icon }}"></i>
+          </div>
+          <div class="step-num">{{ num }}</div>
+          <h4>{{ title }}</h4>
+          <p class="text-muted">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="uv-features-section py-5">
+  <div class="container">
+    <div class="row align-items-center g-5">
+      <div class="col-lg-6">
+        <h2 class="section-title">Why UniVibe?</h2>
+        <div class="feature-list mt-4">
+          {% set feats = [
+            ("🏆", "Sports & Games", "From cricket to chess — find fellow fans & playmates."),
+            ("💻", "Projects & Tech", "Match with people who love the same stack or project type."),
+            ("🎵", "Music & Culture", "Discover your campus concert buddy or jam partner."),
+            ("🚀", "Goals & Ambitions", "Connect with people chasing the same dreams."),
+            ("🤝", "Real Connections", "No AI gimmicks. Pure human-to-human vibe matching.")
+          ] %}
+          {% for em, title, desc in feats %}
+          <div class="feature-item d-flex align-items-start gap-3 mb-4">
+            <div class="feat-icon">{{ em }}</div>
+            <div>
+              <h5 class="mb-1">{{ title }}</h5>
+              <p class="mb-0 text-muted">{{ desc }}</p>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-lg-6">
+        <div class="uv-stats-card">
+          <div class="stat-row">
+            <div class="stat-item">
+              <div class="stat-num">15</div>
+              <div class="stat-label">Quiz Questions</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">5</div>
+              <div class="stat-label">Top Matches</div>
+            </div>
+          </div>
+          <div class="stat-row mt-3">
+            <div class="stat-item">
+              <div class="stat-num">100%</div>
+              <div class="stat-label">Human Algorithm</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-num">∞</div>
+              <div class="stat-label">Possibilities</div>
+            </div>
+          </div>
+          <a href="{{ url_for('register') }}" class="btn uv-btn-primary w-100 mt-4 btn-lg">
+            Start Your Vibe Journey →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

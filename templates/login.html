@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Login — UniVibe{% endblock %}
+{% block content %}
+<div class="auth-page" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 0;">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-5">
+        <div class="card animate-fade-in-up" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
+          <div class="text-center mb-4 animate-fade-in-down">
+            <span class="brand-logo" style="font-size: 3rem; font-weight: 700; color: #6c63ff;">UV</span>
+            <h2 class="mt-3 auth-title" style="font-size: 2rem; font-weight: 700; color: #ffffff;">Welcome Back!</h2>
+            <p class="text-muted" style="color: var(--text-secondary);">Login with your New Horizon India email</p>
+          </div>
+          
+          <!-- Organization Info -->
+          <div class="alert alert-info alert-sm mb-4 animate-slide-in-left" style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; color: #4ecdc4; font-size: 0.9rem; animation: slideInLeft 0.5s ease-out;">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>New Horizon India Members Only</strong><br>
+            Use your <code style="background: rgba(0, 0, 0, 0.2); padding: 0.25rem 0.5rem; border-radius: 0.25rem;">@newhorizonindia.edu</code> email to login
+          </div>
+
+          <form method="POST" id="loginForm">
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.1s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Email Address</label>
+              <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
+                <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
+                  <i class="bi bi-envelope"></i>
+                </span>
+                <input type="email" name="identifier" id="emailInput" class="form-control" 
+                       placeholder="yourname@newhorizonindia.edu" 
+                       oninput="validateLoginEmail(this)"
+                       style="background: transparent; border: none; color: #ffffff;"
+                       required/>
+              </div>
+              <div id="emailValidationFeedback" class="mt-2" style="display:none; font-size:0.82rem;"></div>
+            </div>
+
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.2s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Password</label>
+              <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
+                <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
+                  <i class="bi bi-lock"></i>
+                </span>
+                <input type="password" name="password" class="form-control" placeholder="••••••••" 
+                       style="background: transparent; border: none; color: #ffffff;"
+                       required/>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 btn-lg animate-fade-in-up" id="loginBtn" style="background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%); border: none; color: white; font-weight: 600; margin-top: 1rem; animation-delay: 0.3s;">
+              <i class="bi bi-box-arrow-in-right me-2"></i>Login
+            </button>
+          </form>
+
+          <!-- Divider -->
+          <div class="my-4 animate-fade-in" style="display: flex; align-items: center; gap: 1rem; animation-delay: 0.4s;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <span style="color: var(--text-secondary); font-size: 0.875rem;">OR</span>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          </div>
+
+          <!-- Google Sign-In -->
+          <button type="button" class="btn btn-outline w-100 animate-fade-in-up" id="googleSignInBtn" onclick="signInWithGoogle()" style="border: 2px solid var(--border-color); color: #ffffff; font-weight: 600; animation-delay: 0.5s; transition: all 0.3s ease;">
+            <i class="bi bi-google me-2"></i>Sign in with Google
+          </button>
+
+          <hr class="my-4" style="border-color: var(--border-color);"/>
+          <p class="text-center mb-0" style="color: var(--text-secondary);">New to UniVibe? <a href="{{ url_for('register') }}" class="text-primary" style="color: #6c63ff; text-decoration: none; font-weight: 600;">Create an account →</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ALLOWED_EMAIL_DOMAIN = 'newhorizonindia.edu';
+
+function validateLoginEmail(input) {
+  const email = input.value.toLowerCase().trim();
+  const feedback = document.getElementById('emailValidationFeedback');
+  const loginBtn = document.getElementById('loginBtn');
+
+  if (email.length === 0) {
+    feedback.style.display = 'none';
+    loginBtn.disabled = false;
+    input.parentElement.style.borderColor = 'var(--border-color)';
+    return;
+  }
+
+  feedback.style.display = 'block';
+
+  if (email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+    feedback.innerHTML = `<span style="color:#43d9ad;"><i class="bi bi-check-circle-fill me-1"></i>Valid ${ALLOWED_EMAIL_DOMAIN} email!</span>`;
+    input.parentElement.style.borderColor = '#43d9ad';
+    loginBtn.disabled = false;
+  } else {
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Email must end with <strong>@${ALLOWED_EMAIL_DOMAIN}</strong></span>`;
+    input.parentElement.style.borderColor = '#ff6584';
+    loginBtn.disabled = true;
+  }
+}
+
+// Validate on form submit
+document.getElementById('loginForm').addEventListener('submit', function(e) {
+  const email = document.getElementById('emailInput').value.toLowerCase().trim();
+  if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+    e.preventDefault();
+    const feedback = document.getElementById('emailValidationFeedback');
+    feedback.style.display = 'block';
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Only ${ALLOWED_EMAIL_DOMAIN} emails are allowed!</span>`;
+  }
+});
+
+// Google Sign-In with Firebase initialization check
+async function signInWithGoogle() {
+  try {
+    // Wait for Firebase to be initialized
+    let attempts = 0;
+    while (!window.firebaseAuthEnhanced && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (!window.firebaseAuthEnhanced) {
+      showToast('❌ Firebase not initialized. Please refresh the page.', 'error');
+      return;
+    }
+
+    const result = await window.firebaseAuthEnhanced.signInWithGoogle();
+    if (result.success) {
+      showToast('✅ Google sign-in successful!', 'success');
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        window.location.href = result.redirect || '/dashboard';
+      }, 1000);
+    } else {
+      showToast('❌ ' + result.error, 'error');
+    }
+  } catch (error) {
+    console.error('Sign-in error:', error);
+    showToast('❌ Sign-in failed: ' + error.message, 'error');
+  }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>{% block title %}UniVibe{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/modern-style.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg uv-navbar sticky-top">
+  <div class="container">
+    <a class="navbar-brand" href="{{ url_for('index') }}">
+      <span class="brand-logo">UV</span>
+      <span class="brand-text">UniVibe</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <i class="bi bi-grid-3x3-gap-fill" style="color:#fff"></i>
+    </button>
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav ms-auto align-items-lg-center gap-2">
+        {% if session.get('user_id') %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('dashboard') }}"><i class="bi bi-house-heart"></i> Home</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('quiz') }}"><i class="bi bi-patch-question"></i> Quiz</a></li>
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('results') }}"><i class="bi bi-people"></i> Matches</a></li>
+          <!-- NOTIFICATION BELL -->
+          <li class="nav-item">
+            <a class="nav-link position-relative" href="{{ url_for('notifications') }}">
+              <i class="bi bi-bell-fill"></i>
+              <span class="notif-badge" id="navNotifBadge" style="display:none">0</span>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link uv-avatar-nav" href="{{ url_for('profile', uid=session['user_id']) }}">
+              <span class="av-circle" style="background:{{ session.get('avatar_color','#6c63ff') }}">
+                {{ (session.get('full_name') or session.get('username','?'))[0].upper() }}
+              </span>
+              {{ session.get('full_name') or session.get('username') }}
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="btn btn-outline-light btn-sm" href="{{ url_for('logout') }}">
+              <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+          </li>
+        {% else %}
+          <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Login</a></li>
+          <li class="nav-item"><a class="btn uv-btn-accent btn-sm" href="{{ url_for('register') }}">Join UniVibe</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- FLASH MESSAGES -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="container mt-3">
+      {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show uv-alert" role="alert">
+          {{ msg }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+{% block content %}{% endblock %}
+
+<!-- COOKIE CONSENT BANNER -->
+{% if session.get('user_id') %}
+<div class="cookie-banner" id="cookieBanner" style="display:none;">
+  <div class="container d-flex align-items-center justify-content-between flex-wrap gap-3">
+    <div>
+      <i class="bi bi-cookie me-2" style="color:var(--gold)"></i>
+      <strong>UniVibe uses cookies</strong> — Accept to unlock the <strong>Chat</strong> feature and get real-time notifications.
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm uv-btn-primary" onclick="acceptCookies()">
+        <i class="bi bi-check-circle me-1"></i>Accept & Enable Chat
+      </button>
+      <button class="btn btn-sm btn-outline-secondary" onclick="dismissCookies()">Decline</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<footer class="uv-footer mt-5">
+  <div class="container text-center py-4">
+    <span class="brand-logo sm">UV</span>
+    <p class="mt-2 mb-0 footer-text">UniVibe &copy; 2024 — Find your vibe, find your people.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Firebase SDK Scripts (using compat for global firebase object) -->
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-analytics-compat.js"></script>
+
+<!-- Firebase Configuration and Auth -->
+<script src="{{ url_for('static', filename='js/firebase-config.js') }}"></script>
+<script src="{{ url_for('static', filename='js/firebase-auth-enhanced.js') }}"></script>
+
+<script>
+// ── NOTIFICATION POLLING ────────────────────────────────────────────────────
+{% if session.get('user_id') %}
+function pollNotifications() {
+  fetch('/api/notifications/count')
+    .then(r => r.json())
+    .then(data => {
+      const badge = document.getElementById('navNotifBadge');
+      if (data.count > 0) {
+        badge.style.display = 'inline-flex';
+        badge.textContent = data.count;
+      } else {
+        badge.style.display = 'none';
+      }
+    }).catch(() => {});
+}
+pollNotifications();
+setInterval(pollNotifications, 10000); // poll every 10 seconds
+
+// ── COOKIE BANNER ────────────────────────────────────────────────────────────
+const cookieKey = 'uv_cookie_dismissed_{{ session.get("user_id") }}';
+const cookieAccepted = {{ 'true' if session.get('user_id') and request.cookies.get('uv_cookie_accepted') else 'false' }};
+
+window.addEventListener('DOMContentLoaded', function() {
+  const banner = document.getElementById('cookieBanner');
+  if (banner && !localStorage.getItem(cookieKey) && !cookieAccepted) {
+    setTimeout(() => banner.style.display = 'block', 1500);
+  }
+});
+
+function acceptCookies() {
+  fetch('/api/cookie_consent', {method: 'POST', headers: {'Content-Type': 'application/json'}})
+    .then(r => r.json())
+    .then(() => {
+      document.cookie = 'uv_cookie_accepted=1; path=/; max-age=31536000';
+      localStorage.setItem(cookieKey, '1');
+      document.getElementById('cookieBanner').style.display = 'none';
+      showToast('🍪 Cookies accepted! Chat is now unlocked.', 'success');
+    });
+}
+function dismissCookies() {
+  localStorage.setItem(cookieKey, 'dismissed');
+  document.getElementById('cookieBanner').style.display = 'none';
+}
+{% endif %}
+
+// ── TOAST HELPER ─────────────────────────────────────────────────────────────
+function showToast(msg, type='info') {
+  const t = document.createElement('div');
+  t.className = `uv-toast uv-toast-${type}`;
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add('show'), 100);
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 400); }, 3500);
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

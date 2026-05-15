@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Join UniVibe{% endblock %}
+{% block content %}
+<div class="auth-page" style="min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem 0;">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-6">
+        <div class="card animate-fade-in-up" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 1rem; padding: 2rem; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);">
+          <div class="text-center mb-4 animate-fade-in-down">
+            <span class="brand-logo" style="font-size: 3rem; font-weight: 700; color: #6c63ff;">UV</span>
+            <h2 class="mt-3 auth-title" style="font-size: 2rem; font-weight: 700; color: #ffffff;">Join UniVibe</h2>
+            <p class="text-muted" style="color: var(--text-secondary);">Create your profile and start finding your people</p>
+          </div>
+
+          <!-- Google Sign-Up Option -->
+          <button type="button" class="btn btn-outline w-100 animate-fade-in-up mb-3" id="googleSignUpBtn" onclick="signUpWithGoogle()" style="border: 2px solid var(--border-color); color: #ffffff; font-weight: 600; animation-delay: 0.1s; transition: all 0.3s ease;">
+            <i class="bi bi-google me-2"></i>Sign up with Google
+          </button>
+
+          <!-- Divider -->
+          <div class="my-3 animate-fade-in" style="display: flex; align-items: center; gap: 1rem; animation-delay: 0.2s;">
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+            <span style="color: var(--text-secondary); font-size: 0.875rem;">OR</span>
+            <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+          </div>
+
+          <form method="POST" id="registerForm">
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.3s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Full Name</label>
+              <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
+                <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
+                  <i class="bi bi-person"></i>
+                </span>
+                <input type="text" name="full_name" class="form-control" placeholder="Arjun Sharma" 
+                       style="background: transparent; border: none; color: #ffffff;" required/>
+              </div>
+            </div>
+
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.4s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Username</label>
+              <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
+                <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
+                  <i class="bi bi-at"></i>
+                </span>
+                <input type="text" name="username" class="form-control" placeholder="arjun_v" 
+                       style="background: transparent; border: none; color: #ffffff;" required/>
+              </div>
+            </div>
+
+            <!-- EMAIL WITH NEW HORIZON INDIA RESTRICTION -->
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.5s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Organization Email</label>
+              <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
+                <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
+                  <i class="bi bi-envelope"></i>
+                </span>
+                <input type="email" name="email" id="emailInput" class="form-control"
+                       placeholder="yourname@newhorizonindia.edu"
+                       oninput="checkEmail(this)"
+                       style="background: transparent; border: none; color: #ffffff;"
+                       required/>
+              </div>
+              <!-- Live feedback -->
+              <div id="emailFeedback" class="mt-2" style="display:none; font-size:0.82rem;"></div>
+              <!-- Restriction notice box -->
+              <div class="email-rule-box mt-2" style="background: rgba(78, 205, 196, 0.1); border-left: 4px solid #4ecdc4; color: #4ecdc4; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.85rem;">
+                <i class="bi bi-shield-lock-fill me-1"></i>
+                Only New Horizon India emails ending with <strong>@newhorizonindia.edu</strong> are allowed
+              </div>
+            </div>
+
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.6s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Password</label>
+              <div class="input-group" style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; transition: all 0.3s ease;">
+                <span class="input-group-text" style="background: transparent; border: none; color: var(--text-secondary);">
+                  <i class="bi bi-lock"></i>
+                </span>
+                <input type="password" name="password" class="form-control" placeholder="Min 6 characters" minlength="6" 
+                       style="background: transparent; border: none; color: #ffffff;" required/>
+              </div>
+            </div>
+
+            <div class="form-group animate-fade-in-up" style="animation-delay: 0.7s;">
+              <label class="form-label" style="font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">Short Bio <span style="color: var(--text-secondary);">(optional)</span></label>
+              <textarea name="bio" class="form-control" rows="2" placeholder="CSE student | Coffee addict | Football enthusiast..." 
+                        style="background: var(--bg-tertiary); border: 2px solid var(--border-color); border-radius: 0.75rem; color: #ffffff;"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 btn-lg animate-fade-in-up" id="submitBtn" style="background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%); border: none; color: white; font-weight: 600; margin-top: 1rem; animation-delay: 0.8s;">
+              <i class="bi bi-rocket-takeoff me-2"></i>Create My Account
+            </button>
+          </form>
+
+          <hr class="my-4" style="border-color: var(--border-color);"/>
+          <p class="text-center mb-0" style="color: var(--text-secondary);">Already have an account? <a href="{{ url_for('login') }}" class="text-primary" style="color: #6c63ff; text-decoration: none; font-weight: 600;">Login →</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ALLOWED_EMAIL_DOMAIN = 'newhorizonindia.edu';
+
+function checkEmail(input) {
+  const val = input.value.toLowerCase().trim();
+  const feedback = document.getElementById('emailFeedback');
+  const submitBtn = document.getElementById('submitBtn');
+
+  if (val.length === 0) {
+    feedback.style.display = 'none';
+    submitBtn.disabled = false;
+    input.parentElement.style.borderColor = 'var(--border-color)';
+    return;
+  }
+
+  feedback.style.display = 'block';
+
+  if (val.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+    feedback.innerHTML = `<span style="color:#43d9ad;"><i class="bi bi-check-circle-fill me-1"></i>Valid ${ALLOWED_EMAIL_DOMAIN} email!</span>`;
+    input.parentElement.style.borderColor = '#43d9ad';
+    submitBtn.disabled = false;
+  } else {
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Email must end with <strong>@${ALLOWED_EMAIL_DOMAIN}</strong></span>`;
+    input.parentElement.style.borderColor = '#ff6584';
+    submitBtn.disabled = true;
+  }
+}
+
+// Validate on form submit
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+  const email = document.getElementById('emailInput').value.toLowerCase().trim();
+  if (!email.endsWith(`@${ALLOWED_EMAIL_DOMAIN}`)) {
+    e.preventDefault();
+    const feedback = document.getElementById('emailFeedback');
+    feedback.style.display = 'block';
+    feedback.innerHTML = `<span style="color:#ff6584;"><i class="bi bi-x-circle-fill me-1"></i>Only ${ALLOWED_EMAIL_DOMAIN} emails are allowed!</span>`;
+  }
+});
+
+// Google Sign-Up with Firebase initialization check
+async function signUpWithGoogle() {
+  try {
+    // Wait for Firebase to be initialized
+    let attempts = 0;
+    while (!window.firebaseAuthEnhanced && attempts < 50) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      attempts++;
+    }
+
+    if (!window.firebaseAuthEnhanced) {
+      showToast('❌ Firebase not initialized. Please refresh the page.', 'error');
+      return;
+    }
+
+    const result = await window.firebaseAuthEnhanced.signInWithGoogle();
+    if (result.success) {
+      showToast('✅ Google sign-up successful!', 'success');
+      // Redirect to dashboard after a short delay
+      setTimeout(() => {
+        window.location.href = result.redirect || '/dashboard';
+      }, 1000);
+    } else {
+      showToast('❌ ' + result.error, 'error');
+    }
+  } catch (error) {
+    console.error('Sign-up error:', error);
+    showToast('❌ Sign-up failed: ' + error.message, 'error');
+  }
+}
+</script>
+{% endblock %}

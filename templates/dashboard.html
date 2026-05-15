@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — UniVibe{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <!-- WELCOME HEADER -->
+  <div class="dash-header mb-4">
+    <div class="d-flex align-items-center gap-4 flex-wrap">
+      <div class="av-circle xl" style="background:{{ session.get('avatar_color','#6c63ff') }}">
+        {{ (session.get('full_name') or session.get('username','?'))[0].upper() }}
+      </div>
+      <div>
+        <p class="mb-1 text-muted">Welcome back 👋</p>
+        <h1 class="dash-name">{{ session.get('full_name') or session.get('username') }}</h1>
+        <span class="uv-badge">@{{ session.get('username') }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PENDING CONNECTION REQUESTS -->
+  {% if pending %}
+  <div class="uv-card mb-4" style="border-color:rgba(247,201,72,0.4);background:rgba(247,201,72,0.04);">
+    <h5 class="mb-3"><i class="bi bi-person-plus-fill me-2" style="color:var(--gold)"></i>
+      Pending Requests <span class="uv-badge ms-1">{{ pending|length }}</span>
+    </h5>
+    <div class="row g-3">
+      {% for req in pending %}
+      <div class="col-md-6">
+        <div class="d-flex align-items-center gap-3 p-3" style="background:var(--surface2);border-radius:12px;">
+          <div class="av-circle" style="background:{{ req['avatar_color'] }};width:44px;height:44px;font-size:16px;">
+            {{ (req['full_name'] or req['username'])[0].upper() }}
+          </div>
+          <div class="flex-grow-1">
+            <strong>{{ req['full_name'] or req['username'] }}</strong>
+            <div class="text-muted small">@{{ req['username'] }}</div>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('respond_connection', conn_id=req['id'], action='accept') }}"
+               class="btn btn-sm uv-btn-primary">✓</a>
+            <a href="{{ url_for('respond_connection', conn_id=req['id'], action='reject') }}"
+               class="btn btn-sm uv-btn-outline" style="border-color:#ff6584;color:#ff6584;">✗</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- QUIZ STATUS -->
+  {% if has_quiz %}
+  <div class="uv-card status-card done mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="status-icon done"><i class="bi bi-check-circle-fill"></i></div>
+        <div>
+          <h5 class="mb-0">Quiz Completed! 🎉</h5>
+          <p class="mb-0 text-muted">You're all set. Check out your vibe matches below.</p>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('results') }}" class="btn uv-btn-primary">
+          <i class="bi bi-people-fill me-2"></i>View My Matches
+        </a>
+        <a href="{{ url_for('quiz') }}" class="btn uv-btn-outline">
+          <i class="bi bi-arrow-repeat me-2"></i>Retake Quiz
+        </a>
+      </div>
+    </div>
+  </div>
+  {% else %}
+  <div class="uv-card status-card pending mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div class="d-flex align-items-center gap-3">
+        <div class="status-icon pending"><i class="bi bi-hourglass-split"></i></div>
+        <div>
+          <h5 class="mb-0">Quiz Not Started Yet</h5>
+          <p class="mb-0 text-muted">Take the 15-question quiz to discover your UniVibe matches!</p>
+        </div>
+      </div>
+      <a href="{{ url_for('quiz') }}" class="btn uv-btn-primary btn-lg">
+        <i class="bi bi-patch-question-fill me-2"></i>Start Quiz Now
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- QUICK STATS -->
+  <div class="row g-4 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="uv-card mini-stat text-center">
+        <div class="mini-stat-icon" style="--mc:#6c63ff"><i class="bi bi-people-fill"></i></div>
+        <div class="mini-stat-val">{{ connections|length }}</div>
+        <div class="mini-stat-label">Connections</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="uv-card mini-stat text-center">
+        <div class="mini-stat-icon" style="--mc:#ff6584"><i class="bi bi-bell-fill"></i></div>
+        <div class="mini-stat-val">{{ unread }}</div>
+        <div class="mini-stat-label">Unread Notifs</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="uv-card mini-stat text-center">
+        <div class="mini-stat-icon" style="--mc:#f7c948"><i class="bi bi-person-check-fill"></i></div>
+        <div class="mini-stat-val">{{ pending|length }}</div>
+        <div class="mini-stat-label">Pending Req.</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="uv-card mini-stat text-center">
+        <div class="mini-stat-icon" style="--mc:#43d9ad">
+          <i class="bi bi-{% if cookie_accepted %}cookie{% else %}lock{% endif %}"></i>
+        </div>
+        <div class="mini-stat-val">{{ 'On' if cookie_accepted else 'Off' }}</div>
+        <div class="mini-stat-label">Chat Access</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MY CONNECTIONS LIST -->
+  {% if connections %}
+  <div class="uv-card mb-4">
+    <h5 class="mb-3"><i class="bi bi-people-fill me-2" style="color:var(--primary)"></i>My Connections</h5>
+    <div class="row g-3">
+      {% for c in connections %}
+      <div class="col-md-6">
+        <div class="d-flex align-items-center gap-3 p-3" style="background:var(--surface2);border-radius:12px;">
+          <div class="av-circle" style="background:{{ c['avatar_color'] }};width:44px;height:44px;font-size:16px;">
+            {{ (c['full_name'] or c['username'])[0].upper() }}
+          </div>
+          <div class="flex-grow-1">
+            <strong>{{ c['full_name'] or c['username'] }}</strong>
+            <div class="text-muted small">@{{ c['username'] }}</div>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{{ url_for('profile', uid=c['id']) }}" class="btn btn-sm uv-btn-outline">Profile</a>
+            {% if cookie_accepted %}
+            <a href="{{ url_for('chat', uid=c['id']) }}" class="btn btn-sm uv-btn-primary">
+              <i class="bi bi-chat-dots-fill"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- COOKIE NOTICE IF NOT ACCEPTED -->
+  {% if not cookie_accepted %}
+  <div class="uv-card mb-4" style="border-color:rgba(108,99,255,0.3);background:rgba(108,99,255,0.04);">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+      <div style="font-size:2rem">🍪</div>
+      <div class="flex-grow-1">
+        <h6 class="mb-1">Unlock Chat Feature</h6>
+        <p class="mb-0 text-muted small">Accept cookies to enable real-time chat with your connections and get instant notifications.</p>
+      </div>
+      <button class="btn uv-btn-primary btn-sm" onclick="acceptCookies()">
+        <i class="bi bi-unlock me-1"></i>Accept & Enable Chat
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

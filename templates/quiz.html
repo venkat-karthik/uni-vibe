@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Quiz — UniVibe{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="quiz-header text-center mb-5">
+    <span class="quiz-badge">15 Questions</span>
+    <h2 class="quiz-title mt-3">Tell us about your <span class="accent-text">vibe</span></h2>
+    <p class="text-muted">Answer all 15 questions honestly — the better your answers, the better your matches!</p>
+    <!-- PROGRESS BAR -->
+    <div class="uv-progress mt-4">
+      <div class="uv-progress-bar" id="progressBar" style="width:0%"></div>
+    </div>
+    <small class="text-muted mt-1 d-block"><span id="progressText">0</span> of 15 answered</small>
+  </div>
+
+  <form method="POST" id="quizForm">
+    <div class="row g-4 justify-content-center" id="questionsContainer">
+      {% for q in questions %}
+      <div class="col-md-6 col-lg-4 question-card-wrap" data-qid="{{ q.id }}">
+        <div class="uv-card question-card h-100" id="qcard-{{ q.id }}">
+          <div class="q-num">Q{{ q.id }}</div>
+          <div class="q-icon">{{ q.icon }}</div>
+          <h5 class="q-text">{{ q.text }}</h5>
+          <select name="q{{ q.id }}" class="form-select uv-select q-select" data-qid="{{ q.id }}" required>
+            <option value="" disabled selected>— Choose an option —</option>
+            {% for opt in q.options %}
+            <option value="{{ opt }}">{{ opt }}</option>
+            {% endfor %}
+          </select>
+          <div class="q-chosen mt-2" id="chosen-{{ q.id }}"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- SUBMIT -->
+    <div class="text-center mt-5">
+      <div class="submit-info mb-3">
+        <span id="submitCount">0</span>/15 questions answered
+      </div>
+      <button type="submit" class="btn uv-btn-primary btn-lg px-5 py-3" id="submitBtn" disabled>
+        <i class="bi bi-send-check-fill me-2"></i>Find My Vibe Matches!
+      </button>
+      <p class="text-muted mt-3 small">You need to answer all 15 questions to continue.</p>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const selects = document.querySelectorAll('.q-select');
+  const progressBar = document.getElementById('progressBar');
+  const progressText = document.getElementById('progressText');
+  const submitCount = document.getElementById('submitCount');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function updateProgress() {
+    let answered = 0;
+    selects.forEach(sel => {
+      const card = document.getElementById('qcard-' + sel.dataset.qid);
+      const chosen = document.getElementById('chosen-' + sel.dataset.qid);
+      if (sel.value) {
+        answered++;
+        card.classList.add('answered');
+        chosen.innerHTML = `<span class="chosen-badge"><i class="bi bi-check-circle-fill me-1"></i>${sel.value}</span>`;
+      } else {
+        card.classList.remove('answered');
+        chosen.innerHTML = '';
+      }
+    });
+    const pct = (answered / 15) * 100;
+    progressBar.style.width = pct + '%';
+    progressText.textContent = answered;
+    submitCount.textContent = answered;
+    submitBtn.disabled = answered < 15;
+    if (answered === 15) {
+      submitBtn.classList.add('ready');
+    } else {
+      submitBtn.classList.remove('ready');
+    }
+  }
+
+  selects.forEach(sel => sel.addEventListener('change', updateProgress));
+</script>
+{% endblock %}

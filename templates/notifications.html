@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Notifications — UniVibe{% endblock %}
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-7">
+      <div class="d-flex align-items-center gap-3 mb-4">
+        <h2 class="mb-0"><i class="bi bi-bell-fill me-2" style="color:var(--primary)"></i>Notifications</h2>
+        <span class="uv-badge">{{ notifs|length }}</span>
+      </div>
+
+      {% if notifs %}
+        {% for n in notifs %}
+        <div class="uv-card notif-card mb-3 {% if not n['is_read'] %}notif-unread{% endif %}">
+          <div class="d-flex align-items-start gap-3">
+            <!-- Icon by type -->
+            <div class="notif-icon-wrap
+              {% if n['type'] == 'message' %}notif-msg
+              {% elif n['type'] == 'connection_request' %}notif-conn
+              {% elif n['type'] == 'connection_accepted' %}notif-acc
+              {% elif n['type'] == 'review' %}notif-rev
+              {% elif n['type'] == 'blacklist' %}notif-bl
+              {% endif %}">
+              {% if n['type'] == 'message' %}<i class="bi bi-chat-dots-fill"></i>
+              {% elif n['type'] == 'connection_request' %}<i class="bi bi-person-plus-fill"></i>
+              {% elif n['type'] == 'connection_accepted' %}<i class="bi bi-check-circle-fill"></i>
+              {% elif n['type'] == 'review' %}<i class="bi bi-star-fill"></i>
+              {% elif n['type'] == 'blacklist' %}<i class="bi bi-slash-circle-fill"></i>
+              {% else %}<i class="bi bi-bell-fill"></i>
+              {% endif %}
+            </div>
+            <div class="flex-grow-1">
+              {% if n['full_name'] or n['username'] %}
+              <div class="notif-sender">{{ n['full_name'] or n['username'] }}</div>
+              {% endif %}
+              <div class="notif-text">{{ n['message'] }}</div>
+              <div class="notif-time text-muted small">{{ n['created_at'][:16].replace('T',' ') }}</div>
+            </div>
+            {% if n['link'] %}
+            <a href="{{ n['link'] }}" class="btn btn-sm uv-btn-outline">View</a>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="uv-card text-center py-5">
+          <div style="font-size:4rem">🔔</div>
+          <h5 class="mt-3">No notifications yet</h5>
+          <p class="text-muted">When someone connects, chats, or reviews you — it shows up here.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
