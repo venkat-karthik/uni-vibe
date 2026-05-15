@@ -14,67 +14,183 @@
             <p class="text-muted">Find your vibe, find your people</p>
           </div>
 
-          <!-- Login/Signup Form -->
-          <form method="POST" class="needs-validation">
-            <div class="mb-3">
-              <label for="email" class="form-label fw-600" style="color: #2d3748;">Email Address</label>
-              <input 
-                type="email" 
-                class="form-control" 
-                id="email" 
-                name="email" 
-                placeholder="1NH24CD038@newhorizonindia.edu"
-                pattern="[a-zA-Z0-9._%+-]+@newhorizonindia\.edu$"
-                required
-                style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
-              />
-              <small class="text-muted">Use your New Horizon India email (e.g., 1NH24CD038@newhorizonindia.edu)</small>
+          <!-- Tab Navigation -->
+          <ul class="nav nav-tabs mb-4" id="authTabs" role="tablist" style="border-bottom: 2px solid #e2e8f0;">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-600" id="login-tab" data-bs-toggle="tab" data-bs-target="#login" type="button" role="tab" aria-controls="login" aria-selected="true" style="color: #667eea;">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Login
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-600" id="register-tab" data-bs-toggle="tab" data-bs-target="#register" type="button" role="tab" aria-controls="register" aria-selected="false" style="color: #667eea;">
+                <i class="bi bi-person-plus me-2"></i>Register
+              </button>
+            </li>
+          </ul>
+
+          <!-- Tab Content -->
+          <div class="tab-content" id="authTabContent">
+            <!-- Login Tab -->
+            <div class="tab-pane fade show active" id="login" role="tabpanel" aria-labelledby="login-tab">
+              <form method="POST" action="{{ url_for('enter') }}" class="needs-validation">
+                <input type="hidden" name="action" value="login">
+                
+                <div class="mb-3">
+                  <label for="login_email" class="form-label fw-600" style="color: #2d3748;">Email Address</label>
+                  <input 
+                    type="email" 
+                    class="form-control" 
+                    id="login_email" 
+                    name="email" 
+                    placeholder="1NH24CD038@newhorizonindia.edu"
+                    pattern="[a-zA-Z0-9._%+-]+@newhorizonindia\.edu$"
+                    required
+                    style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label for="login_password" class="form-label fw-600" style="color: #2d3748;">Password</label>
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="login_password" 
+                    name="password" 
+                    placeholder="Enter your password"
+                    required
+                    minlength="6"
+                    style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
+                  />
+                  <small class="text-muted">At least 6 characters</small>
+                </div>
+
+                <button 
+                  type="submit" 
+                  class="btn w-100 fw-600 mb-3" 
+                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; padding: 14px; font-size: 16px; transition: all 0.3s ease;"
+                  onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 20px rgba(102, 126, 234, 0.3)';"
+                  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
+                >
+                  <i class="bi bi-box-arrow-in-right me-2"></i>Login
+                </button>
+              </form>
+
+              <!-- Google Sign-In for Login -->
+              <div class="mb-3">
+                <div style="text-align: center; margin: 20px 0;">
+                  <span style="color: #a0aec0;">or</span>
+                </div>
+                <button 
+                  type="button" 
+                  id="google-signin-btn" 
+                  class="btn w-100 fw-600" 
+                  style="background: white; color: #2d3748; border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; font-size: 16px; transition: all 0.3s ease;"
+                  onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 5px 15px rgba(102, 126, 234, 0.2)';"
+                  onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';"
+                >
+                  <i class="bi bi-google me-2"></i>Sign in with Google
+                </button>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label for="username" class="form-label fw-600" style="color: #2d3748;">Username</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="username" 
-                name="username" 
-                placeholder="Choose a unique username"
-                required
-                pattern="[a-zA-Z0-9_]+"
-                style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
-              />
-              <small class="text-muted">Letters, numbers, and underscores only</small>
-            </div>
+            <!-- Register Tab -->
+            <div class="tab-pane fade" id="register" role="tabpanel" aria-labelledby="register-tab">
+              <form method="POST" action="{{ url_for('enter') }}" class="needs-validation">
+                <input type="hidden" name="action" value="register">
+                
+                <div class="mb-3">
+                  <label for="reg_email" class="form-label fw-600" style="color: #2d3748;">Email Address</label>
+                  <input 
+                    type="email" 
+                    class="form-control" 
+                    id="reg_email" 
+                    name="email" 
+                    placeholder="1NH24CD038@newhorizonindia.edu"
+                    pattern="[a-zA-Z0-9._%+-]+@newhorizonindia\.edu$"
+                    required
+                    style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
+                  />
+                  <small class="text-muted">Use your New Horizon India email</small>
+                </div>
 
-            <div class="mb-3">
-              <label for="full_name" class="form-label fw-600" style="color: #2d3748;">Full Name</label>
-              <input 
-                type="text" 
-                class="form-control" 
-                id="full_name" 
-                name="full_name" 
-                placeholder="Enter your full name"
-                required
-                style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
-              />
-              <small class="text-muted">This is how others will see you</small>
-            </div>
+                <div class="mb-3">
+                  <label for="reg_password" class="form-label fw-600" style="color: #2d3748;">Password</label>
+                  <input 
+                    type="password" 
+                    class="form-control" 
+                    id="reg_password" 
+                    name="password" 
+                    placeholder="Create a strong password"
+                    required
+                    minlength="6"
+                    style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
+                  />
+                  <small class="text-muted">At least 6 characters</small>
+                </div>
 
-            <button 
-              type="submit" 
-              class="btn w-100 fw-600" 
-              style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; padding: 14px; font-size: 16px; transition: all 0.3s ease;"
-              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 20px rgba(102, 126, 234, 0.3)';"
-              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
-            >
-              <i class="bi bi-rocket-takeoff me-2"></i>Enter UniVibe
-            </button>
-          </form>
+                <div class="mb-3">
+                  <label for="username" class="form-label fw-600" style="color: #2d3748;">Username</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Choose a unique username"
+                    required
+                    pattern="[a-zA-Z0-9_]+"
+                    style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
+                  />
+                  <small class="text-muted">Letters, numbers, and underscores only</small>
+                </div>
+
+                <div class="mb-3">
+                  <label for="full_name" class="form-label fw-600" style="color: #2d3748;">Full Name</label>
+                  <input 
+                    type="text" 
+                    class="form-control" 
+                    id="full_name" 
+                    name="full_name" 
+                    placeholder="Enter your full name"
+                    required
+                    style="border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; font-size: 14px;"
+                  />
+                  <small class="text-muted">This is how others will see you</small>
+                </div>
+
+                <button 
+                  type="submit" 
+                  class="btn w-100 fw-600 mb-3" 
+                  style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 10px; padding: 14px; font-size: 16px; transition: all 0.3s ease;"
+                  onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 10px 20px rgba(102, 126, 234, 0.3)';"
+                  onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='none';"
+                >
+                  <i class="bi bi-rocket-takeoff me-2"></i>Create Account
+                </button>
+              </form>
+
+              <!-- Google Sign-Up for Register -->
+              <div class="mb-3">
+                <div style="text-align: center; margin: 20px 0;">
+                  <span style="color: #a0aec0;">or</span>
+                </div>
+                <button 
+                  type="button" 
+                  id="google-signup-btn" 
+                  class="btn w-100 fw-600" 
+                  style="background: white; color: #2d3748; border: 2px solid #e2e8f0; border-radius: 10px; padding: 12px; font-size: 16px; transition: all 0.3s ease;"
+                  onmouseover="this.style.borderColor='#667eea'; this.style.boxShadow='0 5px 15px rgba(102, 126, 234, 0.2)';"
+                  onmouseout="this.style.borderColor='#e2e8f0'; this.style.boxShadow='none';"
+                >
+                  <i class="bi bi-google me-2"></i>Sign up with Google
+                </button>
+              </div>
+            </div>
+          </div>
 
           <div class="mt-4 p-3" style="background: #f0f9ff; border-radius: 10px; border-left: 4px solid #0284c7;">
             <p class="mb-0" style="font-size: 13px; color: #0c4a6e;">
               <i class="bi bi-shield-check me-2" style="color: #0284c7;"></i>
-              <strong>New Horizon India Only!</strong> Only students with @newhorizonindia.edu email addresses can join. Example: 1NH24CD038@newhorizonindia.edu
+              <strong>New Horizon India Only!</strong> Only students with @newhorizonindia.edu email addresses can join.
             </p>
           </div>
         </div>
@@ -82,6 +198,60 @@
     </div>
   </div>
 </div>
+
+<!-- Google Sign-In Script -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+  // Initialize Google Sign-In
+  window.onload = function() {
+    google.accounts.id.initialize({
+      client_id: '{{ google_client_id }}',
+      callback: handleCredentialResponse
+    });
+  };
+
+  function handleCredentialResponse(response) {
+    // Send token to backend
+    fetch('{{ url_for("auth_google") }}', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        token: response.credential
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = '{{ url_for("dashboard") }}';
+      } else {
+        alert('Error: ' + data.error);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      alert('Authentication failed');
+    });
+  }
+
+  // Google Sign-In Button Click Handlers
+  document.getElementById('google-signin-btn').addEventListener('click', function() {
+    google.accounts.id.renderButton(
+      document.getElementById('google-signin-btn'),
+      { theme: 'outline', size: 'large', width: '100%' }
+    );
+    google.accounts.id.prompt();
+  });
+
+  document.getElementById('google-signup-btn').addEventListener('click', function() {
+    google.accounts.id.renderButton(
+      document.getElementById('google-signup-btn'),
+      { theme: 'outline', size: 'large', width: '100%' }
+    );
+    google.accounts.id.prompt();
+  });
+</script>
 
 <style>
   .form-control:focus {
@@ -96,6 +266,21 @@
   
   .fw-600 {
     font-weight: 600;
+  }
+
+  .nav-link {
+    border: none;
+    color: #a0aec0 !important;
+    transition: all 0.3s ease;
+  }
+
+  .nav-link.active {
+    color: #667eea !important;
+    border-bottom: 3px solid #667eea !important;
+  }
+
+  .nav-link:hover {
+    color: #667eea !important;
   }
 </style>
 {% endblock %}

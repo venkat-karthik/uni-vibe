@@ -342,7 +342,8 @@ def get_top_matches(user_id, user_answers):
 @app.route('/')
 def index():
     try:
-        return render_template('index.html')
+        google_client_id = os.getenv('GOOGLE_CLIENT_ID', '631710741538-abc123.apps.googleusercontent.com')
+        return render_template('index.html', google_client_id=google_client_id)
     except Exception as e:
         print(f"❌ Error in index route: {e}")
         return jsonify({'error': str(e)}), 500
@@ -357,15 +358,15 @@ def test():
 
 @app.route('/enter', methods=['GET', 'POST'])
 def enter():
-    """Entry to UniVibe - simple email and username login with Firestore storage."""
+    """Entry to UniVibe - email/password registration and login with Firestore storage."""
     try:
         if request.method == 'POST':
+            action = request.form.get('action', 'register')  # 'register' or 'login'
             email = request.form.get('email', '').strip().lower()
-            username = request.form.get('username', '').strip()
-            full_name = request.form.get('full_name', '').strip()
+            password = request.form.get('password', '').strip()
             
-            if not email or not username or not full_name:
-                flash('Please provide email, username, and full name.', 'warning')
+            if not email or not password:
+                flash('Please provide email and password.', 'warning')
                 return redirect(url_for('enter'))
             
             # Validate email format
@@ -378,77 +379,207 @@ def enter():
                 flash('❌ Only New Horizon India emails are allowed (e.g., 1NH24CD038@newhorizonindia.edu)', 'danger')
                 return redirect(url_for('enter'))
             
-            # Check if email or username already exists
+            # Validate password strength
+            if len(password) < 6:
+                flash('Password must be at least 6 characters long.', 'warning')
+                return redirect(url_for('enter'))
+            
             conn = get_db()
             try:
-                existing_email = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
-                existing_username = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+                if action == 'register':
+                    # Registration flow
+                    username = request.form.get('username', '').strip()
+                    full_name = request.form.get('full_name', '').strip()
+                    
+                    if not username or not full_name:
+                        flash('Please provide username and full name.', 'warning')
+                        return redirect(url_for('enter'))
+                    
+                    existing_email = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+                    existing_username = conn.execute('SELECT id FROM users WHERE username=?', (username,)).fetchone()
+                    
+                    if existing_email:
+                        flash('Email already registered. Please login instead.', 'warning')
+                        return redirect(url_for('enter'))
+                    
+                    if existing_username:
+                        flash('Username already taken. Please choose another.', 'warning')
+                        return redirect(url_for('enter'))
+                    
+                    # Create new user in SQLite
+                    colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
+                    color = random.choice(colors)
+                    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+                    
+                    conn.execute(
+                        'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
+                        (username, email, hashed_password, full_name, color)
+                    )
+                    conn.commit()
+                    
+                    # Get the new user ID
+                    user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+                    user_id = user['id']
+                    
+                    # Store user data in Firestore
+                    if db:
+                        try:
+                            user_data = {
+                                'user_id': user_id,
+                                'email': email,
+                                'username': username,
+                                'full_name': full_name,
+                                'avatar_color': color,
+                                'bio': '',
+                                'is_blacklisted': False,
+                                'auth_method': 'password',
+                                'created_at': datetime.now(),
+                                'updated_at': datetime.now()
+                            }
+                            db.collection('users').document(email).set(user_data)
+                            print(f"✅ User registered and stored in Firestore: {email}")
+                        except Exception as fs_error:
+                            print(f"⚠️ Firestore storage warning: {fs_error}")
+                    
+                    # Set session
+                    session['user_id'] = user_id
+                    session['username'] = username
+                    session['full_name'] = full_name
+                    session['email'] = email
+                    session['avatar_color'] = color
+                    
+                    flash(f'Welcome to UniVibe, {full_name}! 🎉', 'success')
+                    return redirect(url_for('dashboard'))
                 
-                if existing_email:
-                    flash('Email already registered. Please use a different email.', 'warning')
-                    return redirect(url_for('enter'))
-                
-                if existing_username:
-                    flash('Username already taken. Please choose another.', 'warning')
-                    return redirect(url_for('enter'))
-                
-                # Create new user in SQLite
-                colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
-                color = random.choice(colors)
-                
-                conn.execute(
-                    'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
-                    (username, email, hashlib.sha256(b'firestore_user').hexdigest(), full_name, color)
-                )
-                conn.commit()
-                
-                # Get the new user ID
-                user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
-                user_id = user['id']
-                
-                # Store user data in Firestore
-                if db:
-                    try:
-                        user_data = {
-                            'user_id': user_id,
-                            'email': email,
-                            'username': username,
-                            'full_name': full_name,
-                            'avatar_color': color,
-                            'bio': '',
-                            'is_blacklisted': False,
-                            'created_at': datetime.now(),
-                            'updated_at': datetime.now()
-                        }
-                        db.collection('users').document(email).set(user_data)
-                        print(f"✅ User stored in Firestore: {email}")
-                    except Exception as fs_error:
-                        print(f"⚠️ Firestore storage warning: {fs_error}")
-                
-                # Set session
-                session['user_id'] = user_id
-                session['username'] = username
-                session['full_name'] = full_name
-                session['email'] = email
-                session['avatar_color'] = color
-                
-                flash(f'Welcome to UniVibe, {full_name}! 🎉', 'success')
-                return redirect(url_for('dashboard'))
+                else:  # Login flow
+                    # Check if user exists
+                    user = conn.execute('SELECT id, username, full_name, avatar_color, password FROM users WHERE email=?', (email,)).fetchone()
+                    
+                    if not user:
+                        flash('Email not found. Please register first.', 'warning')
+                        return redirect(url_for('enter'))
+                    
+                    # Verify password
+                    hashed_password = hashlib.sha256(password.encode()).hexdigest()
+                    if user['password'] != hashed_password:
+                        flash('Incorrect password. Please try again.', 'danger')
+                        return redirect(url_for('enter'))
+                    
+                    # Set session
+                    session['user_id'] = user['id']
+                    session['username'] = user['username']
+                    session['full_name'] = user['full_name']
+                    session['email'] = email
+                    session['avatar_color'] = user['avatar_color']
+                    
+                    flash(f'Welcome back, {user["full_name"]}! 👋', 'success')
+                    return redirect(url_for('dashboard'))
             finally:
                 conn.close()
         
-        return render_template('enter.html')
+        google_client_id = os.getenv('GOOGLE_CLIENT_ID', '631710741538-abc123.apps.googleusercontent.com')
+        return render_template('enter.html', google_client_id=google_client_id)
     except Exception as e:
         print(f"❌ Error in enter route: {e}")
         import traceback
         traceback.print_exc()
         flash('An error occurred. Please try again.', 'danger')
-        return render_template('enter.html')
+        google_client_id = os.getenv('GOOGLE_CLIENT_ID', '631710741538-abc123.apps.googleusercontent.com')
+        return render_template('enter.html', google_client_id=google_client_id)
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('index'))
+
+@app.route('/auth/google', methods=['POST'])
+def auth_google():
+    """Handle Google Sign-In authentication."""
+    try:
+        token = request.json.get('token')
+        if not token:
+            return jsonify({'error': 'No token provided'}), 400
+        
+        # Verify token with Firebase
+        try:
+            decoded_token = auth.verify_id_token(token)
+            email = decoded_token.get('email', '').lower()
+            uid = decoded_token.get('uid')
+            
+            # Validate domain
+            if not email.endswith('@newhorizonindia.edu'):
+                return jsonify({'error': 'Only New Horizon India emails allowed'}), 403
+            
+            conn = get_db()
+            try:
+                # Check if user exists
+                user = conn.execute('SELECT id, username, full_name, avatar_color FROM users WHERE email=?', (email,)).fetchone()
+                
+                if user:
+                    # Existing user - just login
+                    session['user_id'] = user['id']
+                    session['username'] = user['username']
+                    session['full_name'] = user['full_name']
+                    session['email'] = email
+                    session['avatar_color'] = user['avatar_color']
+                    print(f"✅ Google login successful: {email}")
+                    return jsonify({'success': True, 'message': 'Login successful'})
+                else:
+                    # New user - create account
+                    full_name = decoded_token.get('name', email.split('@')[0])
+                    username = email.split('@')[0] + str(random.randint(1000, 9999))
+                    colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
+                    color = random.choice(colors)
+                    
+                    # Create user in SQLite
+                    conn.execute(
+                        'INSERT INTO users (username, email, password, full_name, avatar_color) VALUES (?,?,?,?,?)',
+                        (username, email, hashlib.sha256(b'google_auth').hexdigest(), full_name, color)
+                    )
+                    conn.commit()
+                    
+                    # Get user ID
+                    user = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()
+                    user_id = user['id']
+                    
+                    # Store in Firestore
+                    if db:
+                        try:
+                            user_data = {
+                                'user_id': user_id,
+                                'email': email,
+                                'username': username,
+                                'full_name': full_name,
+                                'avatar_color': color,
+                                'bio': '',
+                                'is_blacklisted': False,
+                                'auth_method': 'google',
+                                'google_uid': uid,
+                                'created_at': datetime.now(),
+                                'updated_at': datetime.now()
+                            }
+                            db.collection('users').document(email).set(user_data)
+                            print(f"✅ Google user created and stored in Firestore: {email}")
+                        except Exception as fs_error:
+                            print(f"⚠️ Firestore storage warning: {fs_error}")
+                    
+                    # Set session
+                    session['user_id'] = user_id
+                    session['username'] = username
+                    session['full_name'] = full_name
+                    session['email'] = email
+                    session['avatar_color'] = color
+                    
+                    print(f"✅ Google registration successful: {email}")
+                    return jsonify({'success': True, 'message': 'Registration successful'})
+            finally:
+                conn.close()
+        except Exception as token_error:
+            print(f"❌ Token verification error: {token_error}")
+            return jsonify({'error': 'Invalid token'}), 401
+    except Exception as e:
+        print(f"❌ Error in Google auth: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/dashboard')
 def dashboard():
