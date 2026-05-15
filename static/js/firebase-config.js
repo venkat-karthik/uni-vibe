@@ -14,6 +14,10 @@ const firebaseConfig = {
   measurementId: "G-Z8MKB0PL4M"
 };
 
+// Firebase initialization status
+window.firebaseInitialized = false;
+window.firebaseInitError = null;
+
 // Initialize Firebase when ready
 function initializeFirebase() {
   try {
@@ -29,6 +33,7 @@ function initializeFirebase() {
       console.log("✅ Firebase already initialized");
       window.firebaseAuth = firebase.auth();
       window.firebaseDb = firebase.firestore();
+      window.firebaseInitialized = true;
       return true;
     }
 
@@ -41,6 +46,15 @@ function initializeFirebase() {
     window.firebaseAuth = firebase.auth();
     window.firebaseDb = firebase.firestore();
     
+    // Set persistence to LOCAL
+    window.firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(() => {
+        console.log("✅ Firebase persistence set to LOCAL");
+      })
+      .catch((error) => {
+        console.warn("⚠️ Persistence warning:", error.message);
+      });
+    
     // Initialize Analytics
     try {
       firebase.analytics();
@@ -48,7 +62,10 @@ function initializeFirebase() {
       console.warn("⚠️ Analytics initialization warning:", e.message);
     }
     
+    window.firebaseInitialized = true;
     console.log("✅ Firebase initialized successfully!");
+    console.log("✅ Project ID:", firebaseConfig.projectId);
+    console.log("✅ Auth Domain:", firebaseConfig.authDomain);
     console.log("✅ window.firebaseAuth:", window.firebaseAuth ? "Available" : "Not available");
     console.log("✅ window.firebaseDb:", window.firebaseDb ? "Available" : "Not available");
     
@@ -57,6 +74,7 @@ function initializeFirebase() {
     console.error("❌ Firebase initialization error:", error);
     console.error("Error message:", error.message);
     console.error("Error code:", error.code);
+    window.firebaseInitError = error.message;
     return false;
   }
 }
@@ -90,3 +108,11 @@ setTimeout(function() {
     initializeFirebase();
   }
 }, 1000);
+
+// Strategy 4: Final retry after 2 seconds
+setTimeout(function() {
+  if (!window.firebaseAuth) {
+    console.log("🔄 Final final retry for Firebase initialization...");
+    initializeFirebase();
+  }
+}, 2000);
