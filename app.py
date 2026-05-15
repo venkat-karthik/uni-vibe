@@ -784,16 +784,7 @@ def firebase_auth():
         photo_url = data.get('photoURL', '')
         provider = data.get('provider', 'unknown')
         
-        # Check if this is the first user (no users in database yet)
-        conn = get_db()
-        try:
-            user_count = conn.execute('SELECT COUNT(*) as c FROM users').fetchone()['c']
-        finally:
-            conn.close()
-        
-        # If not the first user, check if email is approved
-        if user_count > 0 and not is_email_approved(email):
-            return jsonify({'error': f'Email {email} is not approved. Contact an admin to get approved.'}), 403
+        print(f"🔐 Firebase auth request: {email} ({provider})")
         
         # Extract username from email (part before @)
         username = email.split('@')[0]
@@ -825,7 +816,8 @@ def firebase_auth():
                     conn.commit()
                     user_id = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()['id']
                     print(f"✅ User created in SQLite: {email}")
-                except sqlite3.IntegrityError:
+                except sqlite3.IntegrityError as e:
+                    print(f"⚠️ Username conflict: {username}, trying unique variant")
                     # Username might already exist, try with a unique variant
                     unique_username = f"{username}_{uid[:8]}"
                     conn.execute(
@@ -835,9 +827,6 @@ def firebase_auth():
                     conn.commit()
                     user_id = conn.execute('SELECT id FROM users WHERE email=?', (email,)).fetchone()['id']
                     print(f"✅ User created in SQLite with unique username: {email}")
-                
-                # Approve this email for future signups
-                approve_email(email)
             
             # Also sync to Firestore
             try:
@@ -863,7 +852,6 @@ def firebase_auth():
                 print(f"✅ User synced to Firestore: {email}")
             except Exception as fs_error:
                 print(f"⚠️ Firestore sync warning: {fs_error}")
-                # Don't fail the request if Firestore sync fails
             
             # Set session
             session['user_id'] = user_id
@@ -872,6 +860,7 @@ def firebase_auth():
             session['full_name'] = user_info['full_name']
             session['avatar_color'] = user_info['avatar_color']
             
+            print(f"✅ Firebase auth successful: {email}")
             return jsonify({
                 'success': True,
                 'user_id': user_id,
@@ -881,6 +870,8 @@ def firebase_auth():
             conn.close()
     except Exception as e:
         print(f"❌ Firebase auth error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 # ─── ADMIN ENDPOINTS ──────────────────────────────────────────────────────────
