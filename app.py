@@ -6,12 +6,62 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 import os
 from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials, firestore, auth
 
 load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = 'univibe_secret_2024'
 DB_PATH = 'univibe.db'
+
+# Firebase Configuration (New Project)
+FIREBASE_CONFIG = {
+    "apiKey": "AIzaSyA1WDAtr4k3DThLBx4oc3M392h6bri1Jf0",
+    "authDomain": "unvb-6e1a0.firebaseapp.com",
+    "projectId": "unvb-6e1a0",
+    "storageBucket": "unvb-6e1a0.firebasestorage.app",
+    "messagingSenderId": "133181278048",
+    "appId": "1:133181278048:web:706ce5a2d40be2b5f6c005",
+    "measurementId": "G-41ZSP04VR7"
+}
+
+# Initialize Firebase Admin SDK
+try:
+    firebase_admin.get_app()
+except ValueError:
+    # Firebase not initialized yet - initialize with credentials
+    try:
+        # Try to load from environment variable (for Vercel)
+        import json
+        import os
+        
+        service_account_json = os.getenv('FIREBASE_SERVICE_ACCOUNT')
+        if service_account_json:
+            print("🔄 Loading Firebase credentials from environment variable...")
+            service_account_info = json.loads(service_account_json)
+            cred = credentials.Certificate(service_account_info)
+            firebase_admin.initialize_app(cred)
+            print("✅ Firebase initialized with environment credentials")
+        else:
+            # Try to load from file (for local development)
+            print("🔄 Loading Firebase credentials from file...")
+            cred = credentials.Certificate('serviceAccountKey.json')
+            firebase_admin.initialize_app(cred)
+            print("✅ Firebase initialized with file credentials")
+    except FileNotFoundError:
+        print("⚠️ Service account key not found - using default credentials")
+        firebase_admin.initialize_app()
+    except Exception as e:
+        print(f"⚠️ Firebase initialization error: {e}")
+        firebase_admin.initialize_app()
+
+# Initialize Firestore
+try:
+    db = firestore.client()
+except Exception as e:
+    print(f"⚠️ Firestore initialization warning: {e}")
+    db = None
 
 QUESTIONS = [
     {"id":1,"text":"What is your favourite sport to watch?","icon":"🏆","type":"dropdown","options":["Cricket","Football","Basketball","Tennis","Badminton","Kabaddi","Chess","Table Tennis","Volleyball","Swimming","Athletics","Hockey","Baseball","Rugby","F1 Racing"]},
@@ -249,13 +299,11 @@ def test():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    flash('Registration is currently disabled.', 'info')
-    return redirect(url_for('index'))
+    return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    flash('Login is currently disabled.', 'info')
-    return redirect(url_for('index'))
+    return render_template('login.html')
 
 @app.route('/logout')
 def logout():
@@ -610,6 +658,86 @@ def cookie_consent():
         return jsonify({'success': True})
     finally:
         conn.close()
+
+# ─── FIREBASE AUTH ─────────────────────────────────────────────────────────────
+@app.route('/api/firebase_auth', methods=['POST'])
+def firebase_auth():
+    """Handle Firebase authentication - store in Firestore."""
+    try:
+        data = request.get_json()
+        uid = data.get('uid')
+        email = data.get('email', '').strip().lower()
+        display_name = data.get('displayName', '').strip()
+        photo_url = data.get('photoURL', '')
+        provider = data.get('provider', 'unknown')
+        
+        print(f"🔐 Firebase auth request: {email} ({provider})")
+        
+        # Extract username from email (part before @)
+        username = email.split('@')[0]
+        
+        try:
+            from firebase_admin import firestore
+            fs_db = firestore.client()
+            
+            # Check if user exists in Firestore
+            user_doc = fs_db.collection('users').document(uid).get()
+            
+            if user_doc.exists:
+                # User exists, update their info
+                fs_db.collection('users').document(uid).update({
+                    'full_name': display_name or username,
+                    'updated_at': datetime.now()
+                })
+                print(f"✅ User updated in Firestore: {email}")
+            else:
+                # Create new user
+                colors = ['#6c63ff','#ff6584','#43d9ad','#f7c948','#ff8c42','#4ecdc4','#a29bfe','#fd79a8']
+                color = random.choice(colors)
+                
+                user_data = {
+                    'uid': uid,
+                    'email': email,
+                    'full_name': display_name or username,
+                    'username': username,
+                    'avatar_color': color,
+                    'bio': '',
+                    'is_blacklisted': False,
+                    'provider': provider,
+                    'photoURL': photo_url,
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now(),
+                    'profile_complete': False,
+                    'quiz_completed': False
+                }
+                
+                fs_db.collection('users').document(uid).set(user_data)
+                print(f"✅ User created in Firestore: {email}")
+            
+            # Set session
+            session['user_id'] = uid
+            session['username'] = username
+            session['full_name'] = display_name or username
+            session['avatar_color'] = colors[0] if 'colors' in locals() else '#6c63ff'
+            
+            print(f"✅ Firebase auth successful: {email}")
+            return jsonify({
+                'success': True,
+                'user_id': uid,
+                'message': f'Welcome {display_name or username}!'
+            }), 200
+            
+        except Exception as fs_error:
+            print(f"❌ Firestore error: {fs_error}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': f'Database error: {str(fs_error)}'}), 500
+            
+    except Exception as e:
+        print(f"❌ Firebase auth error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     init_db()
